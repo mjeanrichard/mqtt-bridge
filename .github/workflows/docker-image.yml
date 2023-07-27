@@ -25,7 +25,7 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v4
       with:
-        context: ./mqtt_bridge
-        file: ./mqtt_bridge/Dockerfile
+        context: ./MqttBridge
+        file: ./MqttBridge/Dockerfile
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/mqtt_bridge:latest
