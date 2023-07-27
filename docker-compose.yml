@@ -1,0 +1,47 @@
+version: '3.4'
+
+services:
+  mqtt-broker:
+    image: emqx/emqx:latest
+    environment:
+      DEV_LISTENERS__TCP__DEFAULT__BIND: 1883
+    ports:
+    - 1883:1883
+    - 18083:18083
+    - 8883:8883
+
+  mongodb:
+    image: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongodb:27017/
+
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - 8086:8086
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: root
+      DOCKER_INFLUXDB_INIT_PASSWORD: password
+      DOCKER_INFLUXDB_INIT_ORG: testorg
+      DOCKER_INFLUXDB_INIT_BUCKET: testbucket
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: secrettoken
+
+  mqttbridge:
+    image: ${DOCKER_REGISTRY-}mqttbridge
+    environment:
+      DOTNET_ENVIRONMENT: development
+    build:
+      context: .
+      dockerfile: MqttBridge/Dockerfile
