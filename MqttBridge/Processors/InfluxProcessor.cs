@@ -44,12 +44,17 @@ public class InfluxProcessor : IProcessor
         {
             return true;
         }
+        
+        _logger.LogWarning($"Certificate Error: '{errors:G}' of certificate '{certificate}'");
 
-        foreach (X509ChainElement chainElement in chain.ChainElements)
+        if (chain != null)
         {
-            foreach (X509ChainStatus status in chainElement.ChainElementStatus)
+            foreach (X509ChainElement chainElement in chain.ChainElements)
             {
-                _logger.LogWarning($"Certificate Status: {status.Status} {chainElement.Certificate}: {status.StatusInformation.Trim()}");
+                foreach (X509ChainStatus status in chainElement.ChainElementStatus)
+                {
+                    _logger.LogWarning($"Certificate Status: {status.Status} {chainElement.Certificate}: {status.StatusInformation.Trim()}");
+                }
             }
         }
 
