@@ -6,6 +6,10 @@ using MqttBridge.Converters;
 using MqttBridge.Models;
 using MqttBridge.Processors;
 using MqttBridge.Subscription;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.Extensions.Logging;
 
 namespace MqttBridge;
 
@@ -14,6 +18,12 @@ internal class Program
     private static async Task Main(string[] args)
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+
+        IHostEnvironment env = builder.Environment;
+        builder.Configuration
+            .AddEnvironmentVariables()
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true, true);
 
         builder.Services.Configure<MqttSettings>(
             builder.Configuration.GetRequiredSection(MqttSettings.Name));
@@ -27,6 +37,29 @@ internal class Program
         ConfigureServices(builder.Services);
 
         using IHost host = builder.Build();
+
+
+        ILogger logger = host.Services.GetRequiredService<ILogger>();
+        ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, errors) =>
+        {
+            if (errors == SslPolicyErrors.None)
+            {
+                return true;
+            }
+
+            foreach (X509ChainElement chainElement in chain.ChainElements)
+            {
+                // ChainElementStatus contains validation errors
+                foreach (var status in chainElement.ChainElementStatus)
+                {
+                    logger.LogInformation($"{status.Status} {chainElement.Certificate}: {status.StatusInformation.Trim()}");
+                }
+            }
+
+            return false;
+        };
+
+
         await host.RunAsync();
     }
 
