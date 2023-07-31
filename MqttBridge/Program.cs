@@ -38,10 +38,11 @@ internal class Program
 
         using IHost host = builder.Build();
 
-
         ILogger logger = host.Services.GetRequiredService<ILogger<ServicePointManager>>();
         ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, errors) =>
         {
+            logger.LogInformation("XXX ServicePointManager.ServerCertificateValidationCallback XXX");
+
             if (errors == SslPolicyErrors.None)
             {
                 return true;
@@ -52,7 +53,7 @@ internal class Program
                 // ChainElementStatus contains validation errors
                 foreach (var status in chainElement.ChainElementStatus)
                 {
-                    logger.LogInformation($"{status.Status} {chainElement.Certificate}: {status.StatusInformation.Trim()}");
+                    logger.LogWarning($"{status.Status} {chainElement.Certificate}: {status.StatusInformation.Trim()}");
                 }
             }
 
