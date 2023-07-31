@@ -39,7 +39,7 @@ internal class Program
         using IHost host = builder.Build();
 
 
-        ILogger logger = host.Services.GetRequiredService<ILogger>();
+        ILogger logger = host.Services.GetRequiredService<ILogger<ServicePointManager>>();
         ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, errors) =>
         {
             if (errors == SslPolicyErrors.None)
