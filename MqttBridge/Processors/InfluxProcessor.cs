@@ -1,6 +1,9 @@
-﻿using InfluxDB.Client;
+﻿using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using InfluxDB.Client;
 using InfluxDB.Client.Writes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
 using MqttBridge.Models.DataPoints;
@@ -14,15 +17,43 @@ public class InfluxProcessor : IProcessor
         services.AddSingleton<IProcessor, MongoProcessor>();
     }
 
+    private readonly ILogger<InfluxProcessor> _logger;
+
     private readonly InfluxSettings _influxSettings;
     private readonly InfluxDBClient _influxClient;
     private readonly WriteApiAsync _writeApi;
 
-    public InfluxProcessor(IOptions<InfluxSettings> influxSettings)
+    public InfluxProcessor(IOptions<InfluxSettings> influxSettings, ILogger<InfluxProcessor> logger)
     {
+        _logger = logger;
         _influxSettings = influxSettings.Value;
-        _influxClient = new InfluxDBClient(_influxSettings.Url, _influxSettings.Token);
+
+        InfluxDBClientOptions options = new InfluxDBClientOptions.Builder()
+            .Url(_influxSettings.Url)
+            .AuthenticateToken(_influxSettings.Token)
+            .RemoteCertificateValidationCallback(CertificateErrorCallback)
+            .Build();
+
+        _influxClient = new InfluxDBClient(options);
         _writeApi = _influxClient.GetWriteApiAsync();
+    }
+
+    private bool CertificateErrorCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors errors)
+    {
+        if (errors == SslPolicyErrors.None)
+        {
+            return true;
+        }
+
+        foreach (X509ChainElement chainElement in chain.ChainElements)
+        {
+            foreach (X509ChainStatus status in chainElement.ChainElementStatus)
+            {
+                _logger.LogWarning($"Certificate Status: {status.Status} {chainElement.Certificate}: {status.StatusInformation.Trim()}");
+            }
+        }
+
+        return false;
     }
 
     public async Task ProcessAsync(IReadOnlyCollection<MetricDataPoint> dataPoints)

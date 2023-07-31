@@ -37,30 +37,6 @@ internal class Program
         ConfigureServices(builder.Services);
 
         using IHost host = builder.Build();
-
-        ILogger logger = host.Services.GetRequiredService<ILogger<ServicePointManager>>();
-        ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, errors) =>
-        {
-            logger.LogInformation("XXX ServicePointManager.ServerCertificateValidationCallback XXX");
-
-            if (errors == SslPolicyErrors.None)
-            {
-                return true;
-            }
-
-            foreach (X509ChainElement chainElement in chain.ChainElements)
-            {
-                // ChainElementStatus contains validation errors
-                foreach (var status in chainElement.ChainElementStatus)
-                {
-                    logger.LogWarning($"{status.Status} {chainElement.Certificate}: {status.StatusInformation.Trim()}");
-                }
-            }
-
-            return false;
-        };
-
-
         await host.RunAsync();
     }
 
