@@ -1,12 +1,8 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
 using MqttBridge.Models;
 using MQTTnet.Client;
-using MQTTnet.Protocol;
 using Silverback.Messaging.Configuration;
-using Silverback.Messaging.Configuration.Mqtt;
-using Silverback.Messaging.Serialization;
 
 namespace MqttBridge.Subscription;
 
@@ -48,30 +44,5 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                     // Consume the samples/basic topic
                     .AddMqttInbound<EnvSensorInfo>("devices/philoweg/+/info", "MB_EnvSensorInfo")
                     .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement"));
-    }
-}
-
-public static class SilverbackExtensions
-{
-    private static JsonMessageSerializer<TMessage> CreateSerializer<TMessage>()
-    {
-        return new JsonMessageSerializer<TMessage>()
-        {
-            Options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-        };
-    }
-
-    public static IMqttEndpointsConfigurationBuilder AddMqttInbound<TMessage>(this IMqttEndpointsConfigurationBuilder builder, string topic, string clientId)
-    {
-        builder.AddInbound(
-            endpoint => endpoint
-                .Configure(builder => builder.WithClientId(clientId))
-                .ConsumeFrom(topic)
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
-                .DisableMessageValidation()
-                .UseSerializer(CreateSerializer<TMessage>())
-                .OnError(policy => policy.Skip()));
-
-        return builder;
     }
 }
