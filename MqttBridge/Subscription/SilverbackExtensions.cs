@@ -7,23 +7,15 @@ namespace MqttBridge.Subscription;
 
 public static class SilverbackExtensions
 {
-    private static JsonMessageSerializer<TMessage> CreateSerializer<TMessage>()
-    {
-        return new JsonMessageSerializer<TMessage>()
-        {
-            Options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-        };
-    }
-
-    public static IMqttEndpointsConfigurationBuilder AddMqttInbound<TMessage>(this IMqttEndpointsConfigurationBuilder builder, string topic, string clientId)
+    public static IMqttEndpointsConfigurationBuilder AddMqttInbound<TMessage>(this IMqttEndpointsConfigurationBuilder builder, string topic, string clientId, IMessageSerializer serializer)
     {
         builder.AddInbound(
             endpoint => endpoint
-                .Configure(builder => builder.WithClientId(clientId))
+                .Configure(endpointBuilder => endpointBuilder.WithClientId(clientId))
                 .ConsumeFrom(topic)
                 .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
                 .DisableMessageValidation()
-                .UseSerializer(CreateSerializer<TMessage>())
+                .UseSerializer(serializer)
                 .OnError(policy => policy.Skip()));
 
         return builder;

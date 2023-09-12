@@ -6,18 +6,20 @@ using MqttBridge.Converters;
 using MqttBridge.Models;
 using MqttBridge.Processors;
 using MqttBridge.Subscription;
-using System.Net;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
-using Microsoft.Extensions.Logging;
 
 namespace MqttBridge;
 
-internal class Program
+public class Program
 {
     private static async Task Main(string[] args)
     {
-        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+        using IHost host = Configure().Build();
+        await host.RunAsync();
+    }
+
+    public static HostApplicationBuilder Configure()
+    {
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
         IHostEnvironment env = builder.Environment;
         builder.Configuration
@@ -36,33 +38,29 @@ internal class Program
 
         ConfigureServices(builder.Services);
 
-        using IHost host = builder.Build();
-        await host.RunAsync();
+        return builder;
+
     }
 
     private static void ConfigureServices(IServiceCollection services)
     {
         services
+            .AddSingleton<IConverter<EnvSensorInfo>, EnvSensorInfoConverter>()
+            .AddSingleton<IConverter<EnvSensorMeasurement>, EnvSensorMeasurementConverter>()
+            .AddSingleton<IConverter<FroniusArchiveData>, FroniusArchiveDataConverter>()
             .AddSilverback()
             .WithConnectionToMessageBroker(options => options.AddMqtt())
-            .AddEndpointsConfigurator<EndpointsConfigurator>()
-            .AddSingletonSubscriber<ConvertingSubscriber<EnvSensorInfoConverter, EnvSensorInfo>>();
+            .AddEndpointsConfigurator<EndpointsConfigurator>();
 
-        services.AddSingleton<EnvSensorInfoConverter>();
-
-        RegisterConverter<EnvSensorInfo, EnvSensorInfoConverter>(services);
-        RegisterConverter<EnvSensorMeasurement, EnvSensorMeasurementConverter>(services);
-
-        services.AddSingleton<IProcessor, MongoProcessor>();
-        services.AddSingleton<IProcessor, InfluxProcessor>();
+        RegisterEntity<EnvSensorInfo>(services);
+        RegisterEntity<EnvSensorMeasurement>(services);
+        RegisterEntity<FroniusArchiveData>(services);
     }
 
-    private static void RegisterConverter<TEntity, TConverter>(IServiceCollection services)
-        where TConverter : class, IConverter<TEntity>
-        where TEntity : class
+    private static void RegisterEntity<TMessage>(IServiceCollection services) where TMessage : class
     {
-        services.AddSilverback().AddSingletonSubscriber<ConvertingSubscriber<TConverter, TEntity>>();
-
-        services.AddSingleton<TConverter>();
+        services.AddSilverback()
+            .AddSingletonSubscriber<MongoProcessor<TMessage>>()
+            .AddSingletonSubscriber<InfluxProcessor<TMessage>>();
     }
 }

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="6.11.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="7.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
     <PackageReference Include="MongoDB.Driver" Version="2.20.0" />
     <PackageReference Include="NSubstitute" Version="5.0.0" />
@@ -24,10 +25,17 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Silverback.Integration.MQTT.Testing" Version="4.3.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MqttBridge\MqttBridge.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

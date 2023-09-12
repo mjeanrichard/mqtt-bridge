@@ -1,13 +1,28 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
 using MqttBridge.Models;
 using MQTTnet.Client;
 using Silverback.Messaging.Configuration;
+using Silverback.Messaging.Serialization;
 
 namespace MqttBridge.Subscription;
 
 public class EndpointsConfigurator : IEndpointsConfigurator
 {
+    private static JsonMessageSerializer<TMessage> CreateCamelCaseSerializer<TMessage>()
+    {
+        return new JsonMessageSerializer<TMessage>()
+        {
+            Options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
+        };
+    }
+
+    private static JsonMessageSerializer<TMessage> CreateDefaultSerializer<TMessage>()
+    {
+        return new JsonMessageSerializer<TMessage>();
+    }
+
     private readonly MqttSettings _mqttSettings;
 
     public EndpointsConfigurator(IOptions<MqttSettings> mqttOptions)
@@ -26,7 +41,6 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                         config =>
                         {
                             config
-                                .WithClientId("samples.basic.consumer")
                                 .ConnectViaTcp(client =>
                                 {
                                     client.Server = _mqttSettings.Host;
@@ -42,7 +56,8 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                     )
 
                     // Consume the samples/basic topic
-                    .AddMqttInbound<EnvSensorInfo>("devices/philoweg/+/info", "MB_EnvSensorInfo")
-                    .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement"));
+                    .AddMqttInbound<FroniusArchiveData>("devices/philoweg/pva/archive", "MB_FroniusArchive" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<FroniusArchiveData>())
+                    .AddMqttInbound<EnvSensorInfo>("devices/philoweg/+/info", "MB_EnvSensorInfo" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorInfo>())
+                    .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorMeasurement>()));
     }
 }

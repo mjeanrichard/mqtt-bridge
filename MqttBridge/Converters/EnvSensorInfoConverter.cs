@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
+using InfluxDB.Client.Writes;
 using Microsoft.Extensions.Logging;
 using MqttBridge.Models;
-using MqttBridge.Models.DataPoints;
 using Silverback.Messaging.Messages;
 
 namespace MqttBridge.Converters;
@@ -15,30 +15,32 @@ public class EnvSensorInfoConverter : IConverter<EnvSensorInfo>
         _logger = logger;
     }
 
-    public ValueTask<IReadOnlyCollection<MetricDataPoint>> ConvertAsync(IInboundEnvelope<EnvSensorInfo> envelope, CancellationToken cancellationToken)
+    public Task<IReadOnlyCollection<PointData>> ToPointDataAsync(IInboundEnvelope<EnvSensorInfo> envelope, CancellationToken cancellationToken)
     {
         EnvSensorInfo? info = envelope.Message;
         if (info == null)
         {
-            return ValueTask.FromResult<IReadOnlyCollection<MetricDataPoint>>(ImmutableArray<MetricDataPoint>.Empty);
+            return Task.FromResult<IReadOnlyCollection<PointData>>(ImmutableArray<PointData>.Empty);
         }
 
-        DateTimeOffset timestamp = DateTimeOffset.FromUnixTimeSeconds(info.Timestamp);
-        MetricDataPoint dataPoint = new(timestamp.DateTime, "EnvSensorInfo", info.Name);
+        _logger.LogInformation($"Converting EnvSensorInfo '{info.Name}' to PointData.");
 
-        dataPoint.AddLabel("Ip", info.Ip);
-        dataPoint.AddLabel("Mac", info.Mac);
+        PointData.Builder lineBuilder = PointData.Builder.Measurement("EnvSensorInfo");
 
-        dataPoint.AddValue("ConnectTime", info.ConnectTime);
-        dataPoint.AddValue("FwVersion", info.FwVersion);
-        dataPoint.AddValue("Mqtt", info.Mqtt);
-        dataPoint.AddValue("NtpState", info.NtpState);
-        dataPoint.AddValue("PowerGood", info.PowerGood);
-        dataPoint.AddValue("ResetReason", info.ResetReason);
-        dataPoint.AddValue("Rssi", info.Rssi);
-        dataPoint.AddValue("SdState", info.SdState);
-        dataPoint.AddValue("Wifi", info.Wifi);
+        lineBuilder.Tag("Device", info.Name);
+        lineBuilder.Tag("Ip", info.Ip);
+        lineBuilder.Tag("Mac", info.Mac);
 
-        return ValueTask.FromResult<IReadOnlyCollection<MetricDataPoint>>(new[] { dataPoint });
+        lineBuilder.Field("ConnectTime", info.ConnectTime);
+        lineBuilder.Field("FwVersion", info.FwVersion);
+        lineBuilder.Field("Mqtt", info.Mqtt);
+        lineBuilder.Field("NtpState", info.NtpState);
+        lineBuilder.Field("PowerGood", info.PowerGood);
+        lineBuilder.Field("ResetReason", info.ResetReason);
+        lineBuilder.Field("Rssi", info.Rssi);
+        lineBuilder.Field("SdState", info.SdState);
+        lineBuilder.Field("Wifi", info.Wifi);
+
+        return Task.FromResult<IReadOnlyCollection<PointData>>(new[] { lineBuilder.ToPointData() });
     }
 }

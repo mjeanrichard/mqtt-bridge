@@ -1,8 +1,9 @@
 ﻿using System.Collections.Immutable;
 using System.Text.Json;
+using InfluxDB.Client.Api.Domain;
+using InfluxDB.Client.Writes;
 using Microsoft.Extensions.Logging;
 using MqttBridge.Models;
-using MqttBridge.Models.DataPoints;
 using Silverback.Messaging.Messages;
 
 namespace MqttBridge.Converters;
@@ -16,59 +17,83 @@ public class EnvSensorMeasurementConverter : IConverter<EnvSensorMeasurement>
         _logger = logger;
     }
 
-    public ValueTask<IReadOnlyCollection<MetricDataPoint>> ConvertAsync(IInboundEnvelope<EnvSensorMeasurement> envelope, CancellationToken cancellationToken)
+    public Task<IReadOnlyCollection<PointData>> ToPointDataAsync(IInboundEnvelope<EnvSensorMeasurement> envelope, CancellationToken cancellationToken)
     {
         EnvSensorMeasurement? envSensorMeasurement = envelope.Message;
         if (envSensorMeasurement == null)
         {
-            return ValueTask.FromResult<IReadOnlyCollection<MetricDataPoint>>(ImmutableArray<MetricDataPoint>.Empty);
+            return Task.FromResult<IReadOnlyCollection<PointData>>(ImmutableArray<PointData>.Empty);
         }
 
         if (envSensorMeasurement.Measurements == null)
         {
-            return ValueTask.FromResult<IReadOnlyCollection<MetricDataPoint>>(ImmutableArray<MetricDataPoint>.Empty);
+            return Task.FromResult<IReadOnlyCollection<PointData>>(ImmutableArray<PointData>.Empty);
         }
 
-        DateTimeOffset timestamp = DateTimeOffset.FromUnixTimeSeconds(envSensorMeasurement.Timestamp);
-        MetricDataPoint dataPoint = new(timestamp.DateTime, "EnvSensorMeasurement", envSensorMeasurement.Device);
+        _logger.LogInformation($"Converting '{envSensorMeasurement.Name}' from '{envSensorMeasurement.Device}'.");
 
-        dataPoint.AddLabel("name", envSensorMeasurement.Name);
+        PointData.Builder lineBuilder = PointData.Builder.Measurement("EnvSensorMeasurement");
+
+        lineBuilder.Timestamp(DateTimeOffset.FromUnixTimeSeconds(envSensorMeasurement.Timestamp), WritePrecision.S);
+
+        lineBuilder.Tag("Name", envSensorMeasurement.Name);
+        lineBuilder.Tag("Device", envSensorMeasurement.Device);
 
         foreach (KeyValuePair<string, JsonElement> measurement in envSensorMeasurement.Measurements)
         {
-            JsonElement value = measurement.Value;
-            switch (value.ValueKind)
+            switch (measurement.Key)
             {
-                case JsonValueKind.String:
-                    string? stringValue = value.GetString();
-                    if (stringValue != null)
-                    {
-                        dataPoint.AddLabel(measurement.Key, stringValue);
-                    }
-
+                case "temp":
+                    AddDouble(measurement.Value, lineBuilder, "temperature");
                     break;
-                case JsonValueKind.Number:
-                    if (value.TryGetInt32(out int intValue))
-                    {
-                        dataPoint.AddValue(measurement.Key, intValue);
-                    }
-                    else
-                    {
-                        dataPoint.AddValue(measurement.Key, value.GetDouble());
-                    }
-
+                case "battery":
+                    AddDouble(measurement.Value, lineBuilder, "voltage");
                     break;
-                case JsonValueKind.True:
-                case JsonValueKind.False:
-                case JsonValueKind.Null:
-                case JsonValueKind.Undefined:
-                case JsonValueKind.Object:
-                case JsonValueKind.Array:
+                case "pressure":
+                    AddDouble(measurement.Value, lineBuilder, "pressure");
+                    break;
+                case "humidity":
+                    AddDouble(measurement.Value, lineBuilder, "humidity");
+                    break;
+                case "soil":
+                    AddDouble(measurement.Value, lineBuilder, "moisture");
+                    break;
+                case "soil_raw":
+                    AddDouble(measurement.Value, lineBuilder, "soil_raw");
+                    break;
+                case "lux":
+                    AddDouble(measurement.Value, lineBuilder, "lumen");
+                    break;
+                case "lum_bb":
+                    AddDouble(measurement.Value, lineBuilder, "lumen");
+                    break;
+                case "lum_ir":
+                    AddDouble(measurement.Value, lineBuilder, "lumen");
+                    break;
+                case "tc1":
+                    AddDouble(measurement.Value, lineBuilder, "temperature");
+                    break;
+                case "ta1":
+                    AddDouble(measurement.Value, lineBuilder, "temperature");
+                    break;
                 default:
+                    _logger.LogWarning($"Unknown measurement '{measurement.Key}'.");
                     break;
             }
         }
 
-        return ValueTask.FromResult<IReadOnlyCollection<MetricDataPoint>>(new[] { dataPoint });
+        return Task.FromResult<IReadOnlyCollection<PointData>>(new[] { lineBuilder.ToPointData() });
+    }
+
+    private void AddDouble(JsonElement measurement, PointData.Builder builder, string unit)
+    {
+        if (measurement.TryGetDouble(out double value))
+        {
+            builder.Field(unit, value);
+        }
+        else
+        {
+            _logger.LogWarning($"Measurement was not a Double ({unit}).");
+        }
     }
 }

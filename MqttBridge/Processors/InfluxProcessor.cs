@@ -2,29 +2,26 @@
 using System.Security.Cryptography.X509Certificates;
 using InfluxDB.Client;
 using InfluxDB.Client.Writes;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
-using MqttBridge.Models.DataPoints;
+using MqttBridge.Converters;
+using Silverback.Messaging.Messages;
 
 namespace MqttBridge.Processors;
 
-public class InfluxProcessor : IProcessor
+public class InfluxProcessor<TMessage> : IDisposable where TMessage : class
 {
-    public static void Register(IServiceCollection services)
-    {
-        services.AddSingleton<IProcessor, MongoProcessor>();
-    }
-
-    private readonly ILogger<InfluxProcessor> _logger;
+    private readonly IConverter<TMessage> _converter;
+    private readonly ILogger<InfluxProcessor<TMessage>> _logger;
 
     private readonly InfluxSettings _influxSettings;
     private readonly InfluxDBClient _influxClient;
     private readonly WriteApiAsync _writeApi;
 
-    public InfluxProcessor(IOptions<InfluxSettings> influxSettings, ILogger<InfluxProcessor> logger)
+    public InfluxProcessor(IOptions<InfluxSettings> influxSettings, IConverter<TMessage> converter, ILogger<InfluxProcessor<TMessage>> logger)
     {
+        _converter = converter;
         _logger = logger;
         _influxSettings = influxSettings.Value;
 
@@ -44,7 +41,7 @@ public class InfluxProcessor : IProcessor
         {
             return true;
         }
-        
+
         _logger.LogWarning($"Certificate Error: '{errors:G}' of certificate '{certificate}'");
 
         if (chain != null)
@@ -61,54 +58,19 @@ public class InfluxProcessor : IProcessor
         return false;
     }
 
-    public async Task ProcessAsync(IReadOnlyCollection<MetricDataPoint> dataPoints)
+    public async Task ProcessAsync(IInboundEnvelope<TMessage> message)
     {
-        List<PointData> pointData = CreatePointData(dataPoints);
+        IReadOnlyCollection<PointData> pointData = await _converter.ToPointDataAsync(message, CancellationToken.None);
         if (pointData.Count == 0)
         {
             return;
         }
 
-        await _writeApi.WritePointsAsync(pointData, _influxSettings.Bucket, _influxSettings.Organization);
+        await _writeApi.WritePointsAsync(pointData.ToList(), _influxSettings.Bucket, _influxSettings.Organization);
     }
 
-    private List<PointData> CreatePointData(IReadOnlyCollection<MetricDataPoint> dataPoints)
+    public void Dispose()
     {
-        List<PointData> pointData = new(dataPoints.Count);
-
-        foreach (MetricDataPoint dataPoint in dataPoints)
-        {
-            PointData.Builder lineBuilder = PointData.Builder.Measurement(dataPoint.MetricGroup);
-
-            foreach (IMetricKeyValue label in dataPoint.Labels)
-            {
-                lineBuilder = lineBuilder.Tag(label.Name, label.StringValue);
-            }
-
-            foreach (IMetricKeyValue value in dataPoint.Values)
-            {
-                AddField(value, lineBuilder);
-            }
-
-            pointData.Add(lineBuilder.ToPointData());
-        }
-
-        return pointData;
-    }
-
-    private void AddField(IMetricKeyValue metricValue, PointData.Builder builder)
-    {
-        switch (metricValue)
-        {
-            case IntegerKeyValue integerValue:
-                builder.Field(metricValue.Name, integerValue.Value);
-                return;
-            case DoubleKeyValue doubleValue:
-                builder.Field(metricValue.Name, doubleValue.Value);
-                return;
-            default:
-                builder.Field(metricValue.Name, metricValue.StringValue);
-                return;
-        }
+        _influxClient.Dispose();
     }
 }
