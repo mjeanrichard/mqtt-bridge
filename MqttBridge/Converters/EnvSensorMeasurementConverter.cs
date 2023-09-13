@@ -32,15 +32,16 @@ public class EnvSensorMeasurementConverter : IConverter<EnvSensorMeasurement>
 
         _logger.LogInformation($"Converting '{envSensorMeasurement.Name}' from '{envSensorMeasurement.Device}'.");
 
-        PointData.Builder lineBuilder = PointData.Builder.Measurement("EnvSensorMeasurement");
-
-        lineBuilder.Timestamp(DateTimeOffset.FromUnixTimeSeconds(envSensorMeasurement.Timestamp), WritePrecision.S);
-
-        lineBuilder.Tag("Name", envSensorMeasurement.Name);
-        lineBuilder.Tag("Device", envSensorMeasurement.Device);
-
+        List<PointData> points = new(envSensorMeasurement.Measurements.Count);
         foreach (KeyValuePair<string, JsonElement> measurement in envSensorMeasurement.Measurements)
         {
+            PointData.Builder lineBuilder = PointData.Builder.Measurement("EnvSensorMeasurement");
+
+            lineBuilder.Timestamp(DateTimeOffset.FromUnixTimeSeconds(envSensorMeasurement.Timestamp), WritePrecision.S);
+
+            lineBuilder.Tag("Name", envSensorMeasurement.Name);
+            lineBuilder.Tag("Device", envSensorMeasurement.Device);
+
             switch (measurement.Key)
             {
                 case "temp":
@@ -76,24 +77,41 @@ public class EnvSensorMeasurementConverter : IConverter<EnvSensorMeasurement>
                 case "ta1":
                     AddDouble(measurement.Value, lineBuilder, "temperature");
                     break;
+                case "co2":
+                    AddDouble(measurement.Value, lineBuilder, "co2");
+                    break;
+                case "distance":
+                    AddDouble(measurement.Value, lineBuilder, "distance");
+                    break;
+                case "gas":
+                    AddDouble(measurement.Value, lineBuilder, "gas");
+                    break;
+                case "ruecklauf":
+                    AddDouble(measurement.Value, lineBuilder, "temperature");
+                    break;
+                case "voc":
+                    AddDouble(measurement.Value, lineBuilder, "voc");
+                    break;
                 default:
                     _logger.LogWarning($"Unknown measurement '{measurement.Key}'.");
                     break;
             }
+
+            points.Add(lineBuilder.ToPointData());
         }
 
-        return Task.FromResult<IReadOnlyCollection<PointData>>(new[] { lineBuilder.ToPointData() });
+        return Task.FromResult<IReadOnlyCollection<PointData>>(points);
     }
 
-    private void AddDouble(JsonElement measurement, PointData.Builder builder, string unit)
+    private void AddDouble(JsonElement measurement, PointData.Builder builder, string type)
     {
         if (measurement.TryGetDouble(out double value))
         {
-            builder.Field(unit, value);
+            builder.Field(type, value);
         }
         else
         {
-            _logger.LogWarning($"Measurement was not a Double ({unit}).");
+            _logger.LogWarning($"Measurement was not a Double ({type}).");
         }
     }
 }
