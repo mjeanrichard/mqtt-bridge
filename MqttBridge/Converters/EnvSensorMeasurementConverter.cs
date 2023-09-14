@@ -39,58 +39,57 @@ public class EnvSensorMeasurementConverter : IConverter<EnvSensorMeasurement>
 
             lineBuilder.Timestamp(DateTimeOffset.FromUnixTimeSeconds(envSensorMeasurement.Timestamp), WritePrecision.S);
 
-            lineBuilder.Tag("Name", envSensorMeasurement.Name);
-            lineBuilder.Tag("Device", envSensorMeasurement.Device);
+            lineBuilder.Tag("device", envSensorMeasurement.Device);
 
             switch (measurement.Key)
             {
                 case "temp":
-                    AddDouble(measurement.Value, lineBuilder, "temperature");
+                    AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
                     break;
                 case "battery":
-                    AddDouble(measurement.Value, lineBuilder, "voltage");
+                    AddDouble(measurement.Value, lineBuilder, "voltage", envSensorMeasurement.Name);
                     break;
                 case "pressure":
-                    AddDouble(measurement.Value, lineBuilder, "pressure");
+                    AddDouble(measurement.Value, lineBuilder, "pressure", envSensorMeasurement.Name);
                     break;
                 case "humidity":
-                    AddDouble(measurement.Value, lineBuilder, "humidity");
+                    AddDouble(measurement.Value, lineBuilder, "humidity", envSensorMeasurement.Name);
                     break;
                 case "soil":
-                    AddDouble(measurement.Value, lineBuilder, "moisture");
+                    AddDouble(measurement.Value, lineBuilder, "moisture", envSensorMeasurement.Name);
                     break;
                 case "soil_raw":
-                    AddDouble(measurement.Value, lineBuilder, "soil_raw");
+                    AddDouble(measurement.Value, lineBuilder, "soil_raw", envSensorMeasurement.Name);
                     break;
                 case "lux":
-                    AddDouble(measurement.Value, lineBuilder, "lumen");
+                    AddDouble(measurement.Value, lineBuilder, "lumen", envSensorMeasurement.Name);
                     break;
                 case "lum_bb":
-                    AddDouble(measurement.Value, lineBuilder, "lumen");
+                    AddDouble(measurement.Value, lineBuilder, "lumen", envSensorMeasurement.Name);
                     break;
                 case "lum_ir":
-                    AddDouble(measurement.Value, lineBuilder, "lumen");
+                    AddDouble(measurement.Value, lineBuilder, "lumen", envSensorMeasurement.Name);
                     break;
                 case "tc1":
-                    AddDouble(measurement.Value, lineBuilder, "temperature");
+                    AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
                     break;
                 case "ta1":
-                    AddDouble(measurement.Value, lineBuilder, "temperature");
+                    AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
                     break;
                 case "co2":
-                    AddDouble(measurement.Value, lineBuilder, "co2");
+                    AddDouble(measurement.Value, lineBuilder, "co2", envSensorMeasurement.Name);
                     break;
                 case "distance":
-                    AddDouble(measurement.Value, lineBuilder, "distance");
+                    AddDouble(measurement.Value, lineBuilder, "distance", "salz");
                     break;
                 case "gas":
-                    AddDouble(measurement.Value, lineBuilder, "gas");
+                    AddDouble(measurement.Value, lineBuilder, "gas", envSensorMeasurement.Name);
                     break;
                 case "ruecklauf":
-                    AddDouble(measurement.Value, lineBuilder, "temperature");
+                    AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
                     break;
                 case "voc":
-                    AddDouble(measurement.Value, lineBuilder, "voc");
+                    AddDouble(measurement.Value, lineBuilder, "voc", envSensorMeasurement.Name);
                     break;
                 default:
                     _logger.LogWarning($"Unknown measurement '{measurement.Key}'.");
@@ -103,10 +102,11 @@ public class EnvSensorMeasurementConverter : IConverter<EnvSensorMeasurement>
         return Task.FromResult<IReadOnlyCollection<PointData>>(points);
     }
 
-    private void AddDouble(JsonElement measurement, PointData.Builder builder, string type)
+    private void AddDouble(JsonElement measurement, PointData.Builder builder, string type, string name)
     {
         if (measurement.TryGetDouble(out double value))
         {
+            builder.Tag("name", name);
             builder.Field(type, value);
         }
         else
