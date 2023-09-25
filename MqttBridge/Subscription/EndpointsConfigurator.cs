@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
 using MqttBridge.Models;
+using MqttBridge.Models.Input;
 using MQTTnet.Client;
 using Silverback.Messaging.Configuration;
 using Silverback.Messaging.Serialization;
@@ -56,8 +57,8 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                     )
 
                     // Consume the samples/basic topic
-                    .AddMqttInbound<FroniusArchiveData>("devices/philoweg/pva/archive", "MB_FroniusArchive" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<FroniusArchiveData>())
-                    .AddMqttInbound<EnvSensorInfo>("devices/philoweg/+/info", "MB_EnvSensorInfo" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorInfo>())
+                    .AddMqttInbound<FroniusDailyModel>("devices/philoweg/pva/daily", "MB_FroniusArchive" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<FroniusDailyModel>())
+                    //.AddMqttInbound<EnvSensorInfo>("devices/philoweg/+/info", "MB_EnvSensorInfo" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorInfo>())
                     .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorMeasurement>()));
     }
 }

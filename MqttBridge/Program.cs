@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Conventions;
 using MqttBridge.Configuration;
-using MqttBridge.Converters;
-using MqttBridge.Models;
 using MqttBridge.Processors;
 using MqttBridge.Subscription;
 
@@ -33,34 +33,35 @@ public class Program
         builder.Services.Configure<MongoDbSettings>(
             builder.Configuration.GetRequiredSection(MongoDbSettings.Name));
 
-        builder.Services.Configure<InfluxSettings>(
-            builder.Configuration.GetRequiredSection(InfluxSettings.Name));
+        builder.Services.Configure<PrometheusSettings>(
+            builder.Configuration.GetRequiredSection(PrometheusSettings.Name));
 
         ConfigureServices(builder.Services);
 
-        return builder;
+        SetupMongoDb();
 
+        return builder;
     }
 
     private static void ConfigureServices(IServiceCollection services)
     {
         services
-            .AddSingleton<IConverter<EnvSensorInfo>, EnvSensorInfoConverter>()
-            .AddSingleton<IConverter<EnvSensorMeasurement>, EnvSensorMeasurementConverter>()
-            .AddSingleton<IConverter<FroniusArchiveData>, FroniusArchiveDataConverter>()
             .AddSilverback()
+            .AddScopedSubscriber<FroniusDailySubscriber>()
+            .AddScopedSubscriber<EnvSensorSubscription>()
+            .AddSingletonSubscriber<MongoProcessor>()
+            .AddSingletonSubscriber<PrometheusProcessor>()
             .WithConnectionToMessageBroker(options => options.AddMqtt())
             .AddEndpointsConfigurator<EndpointsConfigurator>();
-
-        RegisterEntity<EnvSensorInfo>(services);
-        RegisterEntity<EnvSensorMeasurement>(services);
-        RegisterEntity<FroniusArchiveData>(services);
     }
 
-    private static void RegisterEntity<TMessage>(IServiceCollection services) where TMessage : class
+    private static void SetupMongoDb()
     {
-        services.AddSilverback()
-            .AddSingletonSubscriber<MongoProcessor<TMessage>>()
-            .AddSingletonSubscriber<InfluxProcessor<TMessage>>();
+        ConventionPack pack = new()
+        {
+            new EnumRepresentationConvention(BsonType.String)
+        };
+
+        ConventionRegistry.Register("EnumStringConvention", pack, t => true);
     }
 }

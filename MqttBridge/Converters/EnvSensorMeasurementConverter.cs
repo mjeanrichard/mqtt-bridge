@@ -44,7 +44,11 @@ public class EnvSensorMeasurementConverter : IConverter<EnvSensorMeasurement>
             switch (measurement.Key)
             {
                 case "temp":
-                    AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
+                case "tc1":
+                case "ta1":
+                case "ruecklauf":
+                case "vorlauf":
+                   AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
                     break;
                 case "battery":
                     AddDouble(measurement.Value, lineBuilder, "voltage", envSensorMeasurement.Name);
@@ -70,12 +74,6 @@ public class EnvSensorMeasurementConverter : IConverter<EnvSensorMeasurement>
                 case "lum_ir":
                     AddDouble(measurement.Value, lineBuilder, "lumen", envSensorMeasurement.Name);
                     break;
-                case "tc1":
-                    AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
-                    break;
-                case "ta1":
-                    AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
-                    break;
                 case "co2":
                     AddDouble(measurement.Value, lineBuilder, "co2", envSensorMeasurement.Name);
                     break;
@@ -84,9 +82,6 @@ public class EnvSensorMeasurementConverter : IConverter<EnvSensorMeasurement>
                     break;
                 case "gas":
                     AddDouble(measurement.Value, lineBuilder, "gas", envSensorMeasurement.Name);
-                    break;
-                case "ruecklauf":
-                    AddDouble(measurement.Value, lineBuilder, "temperature", envSensorMeasurement.Name);
                     break;
                 case "voc":
                     AddDouble(measurement.Value, lineBuilder, "voc", envSensorMeasurement.Name);
