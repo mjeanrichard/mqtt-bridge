@@ -7,6 +7,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using MqttBridge.Models;
+using MqttBridge.Models.Data;
+using MqttBridge.Models.Input;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using NSubstitute;
@@ -21,9 +23,9 @@ namespace MqttBridge.Tests;
 
 public class FroniusArchiveDataConverterTests
 {
-    private static IInboundEnvelope<EnvSensorInfo> CreateEnvelope(EnvSensorInfo info)
+    private static IInboundEnvelope<EnvSensorInfoMessage> CreateEnvelope(EnvSensorInfoMessage info)
     {
-        IInboundEnvelope<EnvSensorInfo> envelope = Substitute.For<IInboundEnvelope<EnvSensorInfo>>();
+        IInboundEnvelope<EnvSensorInfoMessage> envelope = Substitute.For<IInboundEnvelope<EnvSensorInfoMessage>>();
         envelope.Message.Returns(info);
         return envelope;
     }

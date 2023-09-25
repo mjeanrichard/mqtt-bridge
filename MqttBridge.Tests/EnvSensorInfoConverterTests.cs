@@ -1,20 +1,14 @@
-using FluentAssertions;
-
-using Microsoft.Extensions.Logging.Abstractions;
-using MqttBridge.Converters;
-using MqttBridge.Models;
-
+using MqttBridge.Models.Input;
 using NSubstitute;
-
 using Silverback.Messaging.Messages;
 
 namespace MqttBridge.Tests;
 
 public class EnvSensorInfoConverterTests
 {
-    private static IInboundEnvelope<EnvSensorInfo> CreateEnvelope(EnvSensorInfo info)
+    private static IInboundEnvelope<EnvSensorInfoMessage> CreateEnvelope(EnvSensorInfoMessage info)
     {
-        IInboundEnvelope<EnvSensorInfo> envelope = Substitute.For<IInboundEnvelope<EnvSensorInfo>>();
+        IInboundEnvelope<EnvSensorInfoMessage> envelope = Substitute.For<IInboundEnvelope<EnvSensorInfoMessage>>();
         envelope.Message.Returns(info);
         return envelope;
     }
@@ -22,7 +16,7 @@ public class EnvSensorInfoConverterTests
     [Test]
     public async Task ConvertAsync_ConvertsJson()
     {
-        EnvSensorInfo info = new()
+        EnvSensorInfoMessage info = new()
         {
             Timestamp = 1690228102,
             Name = "test",
@@ -41,11 +35,11 @@ public class EnvSensorInfoConverterTests
 
         //EnvSensorInfoConverter converter = new(NullLogger<EnvSensorInfoConverter>.Instance);
         //MetricMessage metric = await converter.ConvertAsync(CreateEnvelope(info), CancellationToken.None);
-        
+
         //metric.DataPoints.Should().HaveCount(1);
         //MetricDataPoint dataPoint = metric.DataPoints.Single();
         //dataPoint.Should().NotBeNull();
-        //dataPoint!.MetricGroup.Should().Be("EnvSensorInfo");
+        //dataPoint!.MetricGroup.Should().Be("EnvSensorInfoMessage");
         //dataPoint.DeviceId.Should().Be("test");
         //dataPoint.Timestamp.Should().Be(new DateTime(2023, 07, 24, 19, 48, 22, DateTimeKind.Utc));
         //dataPoint.Labels.Should().Contain(value => value.Name == "Ip");

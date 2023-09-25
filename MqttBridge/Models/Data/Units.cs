@@ -1,4 +1,4 @@
-﻿namespace MqttBridge.Models;
+﻿namespace MqttBridge.Models.Data;
 
 public enum Units
 {
@@ -8,7 +8,7 @@ public enum Units
     Percent,
     HectoPascal,
     Lux,
-    Unknown,
+    None,
     Ppm,
     Ohm
 }

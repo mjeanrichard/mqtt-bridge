@@ -19,10 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Influx\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="appsettings.development.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>

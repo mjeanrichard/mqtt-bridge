@@ -1,6 +1,6 @@
-﻿namespace MqttBridge.Models;
+﻿namespace MqttBridge.Models.Input;
 
-public class EnvSensorInfo
+public class EnvSensorInfoMessage
 {
     public long Timestamp { get; set; }
     public string Name { get; set; }

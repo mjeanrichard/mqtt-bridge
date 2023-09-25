@@ -4,12 +4,11 @@ namespace MqttBridge.Models;
 
 public class Metric
 {
-    private readonly Dictionary<string, string> _tags;
 
     public Metric(string name)
     {
         Name = name;
-        _tags = new Dictionary<string, string>();
+        Tags = new Dictionary<string, string>();
     }
 
     public string Name { get; set; }
@@ -18,11 +17,11 @@ public class Metric
 
     public long Timestamp { get; set; }
 
-    public IDictionary<string, string> Tags => _tags;
+    public IDictionary<string, string> Tags { get; set; }
 
     public Metric SetTag(string tag, string value)
     {
-        _tags[tag] = value;
+        Tags[tag] = value;
         return this;
     }
 

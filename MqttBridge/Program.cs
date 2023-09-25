@@ -48,7 +48,8 @@ public class Program
         services
             .AddSilverback()
             .AddScopedSubscriber<FroniusDailySubscriber>()
-            .AddScopedSubscriber<EnvSensorSubscription>()
+            .AddScopedSubscriber<EnvSensorSubscriber>()
+            .AddScopedSubscriber<EnvSensorInfoSubscriber>()
             .AddSingletonSubscriber<MongoProcessor>()
             .AddSingletonSubscriber<PrometheusProcessor>()
             .WithConnectionToMessageBroker(options => options.AddMqtt())

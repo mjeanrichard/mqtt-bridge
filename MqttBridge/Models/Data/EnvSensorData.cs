@@ -1,4 +1,4 @@
-﻿namespace MqttBridge.Models;
+﻿namespace MqttBridge.Models.Data;
 
 public class EnvSensorData : IDataModel
 {

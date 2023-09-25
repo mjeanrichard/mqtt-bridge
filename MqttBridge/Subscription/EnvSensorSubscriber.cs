@@ -1,16 +1,17 @@
 ﻿using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using MqttBridge.Models;
+using MqttBridge.Models.Data;
+using MqttBridge.Models.Input;
 using Silverback.Messaging.Publishing;
 
 namespace MqttBridge.Subscription;
 
-public class EnvSensorSubscription
+public class EnvSensorSubscriber
 {
-    private readonly ILogger<EnvSensorSubscription> _logger;
+    private readonly ILogger<EnvSensorSubscriber> _logger;
     private readonly IPublisher _publisher;
 
-    public EnvSensorSubscription(ILogger<EnvSensorSubscription> logger, IPublisher publisher)
+    public EnvSensorSubscriber(ILogger<EnvSensorSubscriber> logger, IPublisher publisher)
     {
         _logger = logger;
         _publisher = publisher;
@@ -73,7 +74,7 @@ public class EnvSensorSubscription
                 data.Type = MeasurementType.Moisture;
                 break;
             case "soil_raw":
-                data.Unit = Units.Unknown;
+                data.Unit = Units.None;
                 data.Type = MeasurementType.MoistureRaw;
                 break;
             case "lux":
@@ -111,7 +112,7 @@ public class EnvSensorSubscription
             case "timestamp":
                 break;
             default:
-                _logger.LogWarning($"Unknown Measurement ({data.Name}).");
+                _logger.LogWarning($"None Measurement ({data.Name}).");
                 break;
         }
     }

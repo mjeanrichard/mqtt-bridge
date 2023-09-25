@@ -1,10 +1,7 @@
-﻿using System.Linq.Expressions;
-using InfluxDB.Client.Api.Domain;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MqttBridge.Configuration;
-using MqttBridge.Models;
-using NSubstitute;
+using MqttBridge.Models.Data;
 
 namespace MqttBridge.Processors;
 
@@ -38,7 +35,13 @@ public class MongoProcessor
         await UploadAsync(envSensorData, "Environment", EnvFilter);
     }
 
-    private async Task UploadAsync<T>(List<T> data, string collectionName, Func<T, FilterDefinition<T>> filterBuilder) where T: IDataModel
+    public async Task ProcessAsync(EnvSensorInfo envSensorInfo)
+    {
+        FilterDefinition<EnvSensorInfo> EnvFilter(EnvSensorInfo dataPoint) => Builders<EnvSensorInfo>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Device == dataPoint.Device);
+        await UploadAsync(new[] { envSensorInfo }, "SensorInfo", EnvFilter);
+    }
+
+    private async Task UploadAsync<T>(IEnumerable<T> data, string collectionName, Func<T, FilterDefinition<T>> filterBuilder) where T : IDataModel
     {
         IMongoCollection<T> collection = _database.GetCollection<T>(collectionName);
 
