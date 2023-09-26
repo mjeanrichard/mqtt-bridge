@@ -9,7 +9,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MqttBridge.Tests", "MqttBri
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{9FA1389E-A247-4B49-A225-8CB3631EC4A8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MqttBridge.Migrate", "..\MqttBridge.Migrate\MqttBridge.Migrate.csproj", "{25E2129D-168A-4F05-A143-A704D77841C4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MqttBridge.Migrate", "..\MqttBridge.Migrate\MqttBridge.Migrate.csproj", "{25E2129D-168A-4F05-A143-A704D77841C4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Github", "Github", "{97F1303E-6932-4AAA-8727-1F6B1547B1EE}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\docker-image.yml = .github\workflows\docker-image.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
