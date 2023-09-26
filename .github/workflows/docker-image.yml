@@ -35,4 +35,4 @@ jobs:
         file: ./MqttBridge/Dockerfile
         platforms: linux/amd64,linux/arm64
         push: true
-        tags: ${{ format('{0}/mqtt_bridge:1.{1}', vars.DOCKERHUB_USERNAME, github.run_number) }} , ${{ vars.DOCKERHUB_USERNAME }}/mqtt_bridge:latest
+        tags: ${{ format('{0}/mqtt_bridge:1.{1}', secrets.DOCKERHUB_USERNAME, github.run_number) }} , ${{ secrets.DOCKERHUB_USERNAME }}/mqtt_bridge:latest
