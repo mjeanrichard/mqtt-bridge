@@ -38,8 +38,8 @@ public class EnvSensorSubscriber
             data.TimestampUtc = DateTimeOffset.FromUnixTimeSeconds(message.Timestamp).UtcDateTime;
             data.IsTestDevice = message.Device.StartsWith("test", StringComparison.OrdinalIgnoreCase);
 
-            SetUnit(data);
             SetValue(data, measurement.Value);
+            SetUnit(data);
 
             yield return data;
         }
@@ -92,6 +92,7 @@ public class EnvSensorSubscriber
             case "distance":
                 data.Unit = Units.Meter;
                 data.Type = MeasurementType.Distance;
+                data.Value /= 1000.0;
                 break;
             case "co2":
                 data.Unit = Units.Ppm;
