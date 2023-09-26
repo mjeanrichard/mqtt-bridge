@@ -1,5 +1,6 @@
 ﻿using MqttBridge.Models;
 using MqttBridge.Models.Data;
+using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Input;
 using Silverback.Messaging.Publishing;
 

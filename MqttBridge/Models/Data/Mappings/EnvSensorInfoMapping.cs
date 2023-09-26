@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using MqttBridge.Models.Data.Sensor;
 
 namespace MqttBridge.Models.Data.Mappings;
 

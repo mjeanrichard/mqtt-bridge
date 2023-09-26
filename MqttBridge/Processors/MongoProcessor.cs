@@ -2,6 +2,8 @@
 using MongoDB.Driver;
 using MqttBridge.Configuration;
 using MqttBridge.Models.Data;
+using MqttBridge.Models.Data.Pva;
+using MqttBridge.Models.Data.Sensor;
 
 namespace MqttBridge.Processors;
 

@@ -1,4 +1,4 @@
-﻿namespace MqttBridge.Models.Data;
+﻿namespace MqttBridge.Models.Data.Sensor;
 
 public enum ResetReason
 {

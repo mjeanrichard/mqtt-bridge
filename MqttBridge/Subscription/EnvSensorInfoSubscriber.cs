@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.Mappings;
+using MqttBridge.Models.Data.Sensor;
 using MqttBridge.Models.Input;
 using Silverback.Messaging.Publishing;
 
