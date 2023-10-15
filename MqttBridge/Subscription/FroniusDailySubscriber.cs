@@ -1,5 +1,4 @@
-﻿using MqttBridge.Models;
-using MqttBridge.Models.Data;
+﻿using Microsoft.Extensions.Logging;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Input;
 using Silverback.Messaging.Publishing;
@@ -9,10 +8,12 @@ namespace MqttBridge.Subscription;
 public class FroniusDailySubscriber
 {
     private readonly IPublisher _publisher;
+    private readonly ILogger<FroniusDailySubscriber> _logger;
 
-    public FroniusDailySubscriber(IPublisher publisher)
+    public FroniusDailySubscriber(IPublisher publisher, ILogger<FroniusDailySubscriber> logger)
     {
         _publisher = publisher;
+        _logger = logger;
     }
 
     public async Task ProcessAsync(FroniusDailyModel message)
@@ -45,6 +46,17 @@ public class FroniusDailySubscriber
             data.CumulativePerDay.Exported = dataPoint.Exported + previousPowerData.Exported;
             data.CumulativePerDay.OhmPilotConsumed = dataPoint.OhmPilotConsumed + previousPowerData.OhmPilotConsumed;
             data.CumulativePerDay.Produced = dataPoint.Produced + previousPowerData.Produced;
+
+            if (data.Instant.DirectlyConsumed > 10_000)
+            {
+                _logger.LogWarning($"Broken Value detected: Instant '{data.Instant.DirectlyConsumed}' @ {dataPoint.Seconds}.");
+                yield break;
+            }
+            if (data.CumulativePerDay.DirectlyConsumed > 100_000_000)
+            {
+                _logger.LogWarning($"Broken Value detected: CumulativePerDay '{data.CumulativePerDay.DirectlyConsumed}' Data point was '{dataPoint.DirectlyConsumed}' @ {dataPoint.Seconds}.");
+                yield break;
+            }
 
             yield return data;
 
