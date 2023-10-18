@@ -50,6 +50,7 @@ public class Program
             .AddScopedSubscriber<FroniusDailySubscriber>()
             .AddScopedSubscriber<EnvSensorSubscriber>()
             .AddScopedSubscriber<EnvSensorInfoSubscriber>()
+            .AddScopedSubscriber<GasMeterSubscriber>()
             .AddSingletonSubscriber<MongoProcessor>()
             .AddSingletonSubscriber<PrometheusProcessor>()
             .WithConnectionToMessageBroker(options => options.AddMqtt())

@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using MqttBridge.Configuration;
 using MqttBridge.Models.Data;
+using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Sensor;
 
@@ -41,6 +42,12 @@ public class MongoProcessor
     {
         FilterDefinition<EnvSensorInfo> EnvFilter(EnvSensorInfo dataPoint) => Builders<EnvSensorInfo>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Device == dataPoint.Device);
         await UploadAsync(new[] { envSensorInfo }, "SensorInfo", EnvFilter);
+    }
+
+    public async Task ProcessAsync(GasMeterData data)
+    {
+        FilterDefinition<GasMeterData> EnvFilter(GasMeterData dataPoint) => Builders<GasMeterData>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc);
+        await UploadAsync(new[] { data }, "GasMeter", EnvFilter);
     }
 
     private async Task UploadAsync<T>(IEnumerable<T> data, string collectionName, Func<T, FilterDefinition<T>> filterBuilder) where T : IDataModel

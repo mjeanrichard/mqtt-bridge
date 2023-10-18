@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
 using MqttBridge.Models;
 using MqttBridge.Models.Data;
+using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Sensor;
 
@@ -29,7 +30,6 @@ public class PrometheusProcessor
         await SendToPrometheus(ConvertToPrometheus(envSensorData));
     }
 
-
     public async Task ProcessAsync(List<FroniusArchiveData> pvaData)
     {
         await SendToPrometheus(ConvertToPrometheus(pvaData));
@@ -38,6 +38,11 @@ public class PrometheusProcessor
     public async Task ProcessAsync(EnvSensorInfo info)
     {
         await SendToPrometheus(ConvertToPrometheus(info));
+    }
+
+    public async Task ProcessAsync(GasMeterData data)
+    {
+        await SendToPrometheus(ConvertToPrometheus(data));
     }
 
     private async Task SendToPrometheus(IEnumerable<string> lines)
@@ -91,6 +96,15 @@ public class PrometheusProcessor
             yield return new Metric("pva_temperature_celsius") { Timestamp = ts, Value = data.TemperaturePowerstage }.SetTag("device", "Powerstage").ToPrometheus();
             yield return new Metric("pva_temperature_celsius") { Timestamp = ts, Value = data.TemperatureOhmPilot1 }.SetTag("device", "OhmPilot1").ToPrometheus();
         }
+    }
+
+
+    private IEnumerable<string> ConvertToPrometheus(GasMeterData data)
+    {
+        DateTimeOffset dto = data.TimestampUtc;
+        long ts = dto.ToUnixTimeMilliseconds();
+        yield return new Metric("sensor_volume_cubicmeters") { Timestamp = ts, Value = data.Volume }.SetTag("device", "GasMeter").SetTag("device_id", data.Id).ToPrometheus();
+        yield return new Metric("sensor_battery_volts") { Timestamp = ts, Value = data.Battery }.SetTag("device", "GasMeter").SetTag("device_id", data.Id).ToPrometheus();
     }
 
     private IEnumerable<string> ConvertToPrometheus(EnvSensorInfo info)
