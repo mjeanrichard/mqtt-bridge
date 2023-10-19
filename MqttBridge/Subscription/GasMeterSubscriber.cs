@@ -25,7 +25,7 @@ public class GasMeterSubscriber
     private GasMeterData Map(GasMeterMessage message)
     {
         GasMeterData data = new();
-        data.Id = message.Id;
+        data.DeviceId = message.Id;
         data.AccessNumber = message.AccessNumber;
         data.Address = message.Address;
         data.Battery = message.BatteryMilivolts / 1000d;

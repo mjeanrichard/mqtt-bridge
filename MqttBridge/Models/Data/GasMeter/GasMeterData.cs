@@ -4,7 +4,7 @@ public class GasMeterData : IDataModel
 {
     public int Address { get; set; }
 
-    public string Id { get; set; }
+    public string DeviceId { get; set; }
 
     public int Manufacturer { get; set; }
 

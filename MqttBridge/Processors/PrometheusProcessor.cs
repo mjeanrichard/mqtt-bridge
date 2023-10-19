@@ -103,8 +103,8 @@ public class PrometheusProcessor
     {
         DateTimeOffset dto = data.TimestampUtc;
         long ts = dto.ToUnixTimeMilliseconds();
-        yield return new Metric("sensor_volume_cubicmeters") { Timestamp = ts, Value = data.Volume }.SetTag("device", "GasMeter").SetTag("device_id", data.Id).ToPrometheus();
-        yield return new Metric("sensor_battery_volts") { Timestamp = ts, Value = data.Battery }.SetTag("device", "GasMeter").SetTag("device_id", data.Id).ToPrometheus();
+        yield return new Metric("sensor_volume_cubicmeters") { Timestamp = ts, Value = data.Volume }.SetTag("device", "GasMeter").SetTag("device_id", data.DeviceId).ToPrometheus();
+        yield return new Metric("sensor_battery_volts") { Timestamp = ts, Value = data.Battery }.SetTag("device", "GasMeter").SetTag("device_id", data.DeviceId).ToPrometheus();
     }
 
     private IEnumerable<string> ConvertToPrometheus(EnvSensorInfo info)
