@@ -3,8 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
+using MqttBridge.Clients;
 using MqttBridge.Configuration;
 using MqttBridge.Processors;
+using MqttBridge.Scrapers;
 using MqttBridge.Subscription;
 
 namespace MqttBridge;
@@ -36,6 +38,9 @@ public class Program
         builder.Services.Configure<PrometheusSettings>(
             builder.Configuration.GetRequiredSection(PrometheusSettings.Name));
 
+        builder.Services.Configure<RemoconSettings>(
+            builder.Configuration.GetRequiredSection(RemoconSettings.Name));
+
         ConfigureServices(builder.Services);
 
         SetupMongoDb();
@@ -45,6 +50,9 @@ public class Program
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<RemoconClient>();
+        services.AddHostedService<RemoconScraperService>();
+
         services
             .AddSilverback()
             .AddScopedSubscriber<FroniusDailySubscriber>()

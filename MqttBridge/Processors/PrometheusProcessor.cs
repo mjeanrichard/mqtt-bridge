@@ -8,6 +8,7 @@ using MqttBridge.Models;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
+using MqttBridge.Models.Data.Remocon;
 using MqttBridge.Models.Data.Sensor;
 
 namespace MqttBridge.Processors;
@@ -41,6 +42,11 @@ public class PrometheusProcessor
     }
 
     public async Task ProcessAsync(GasMeterData data)
+    {
+        await SendToPrometheus(ConvertToPrometheus(data));
+    }
+
+    public async Task ProcessAsync(RemoconModel data)
     {
         await SendToPrometheus(ConvertToPrometheus(data));
     }
@@ -105,6 +111,20 @@ public class PrometheusProcessor
         long ts = dto.ToUnixTimeMilliseconds();
         yield return new Metric("sensor_volume_cubicmeters") { Timestamp = ts, Value = data.Volume }.SetTag("device", "GasMeter").SetTag("device_id", data.DeviceId).ToPrometheus();
         yield return new Metric("sensor_battery_volts") { Timestamp = ts, Value = data.Battery }.SetTag("device", "GasMeter").SetTag("device_id", data.DeviceId).ToPrometheus();
+    }
+
+    private IEnumerable<string> ConvertToPrometheus(RemoconModel data)
+    {
+        DateTimeOffset dto = data.TimestampUtc;
+        long ts = dto.ToUnixTimeMilliseconds();
+
+        Metric CreateMetric(string name, double value) => new Metric(name) { Timestamp = ts, Value = value }.SetTag("device", "Heizung").SetTag("device_id", data.GatewayId);
+
+        yield return CreateMetric("sensor_temperature_celsius", data.HotWaterTemperature).SetTag("name", "HotWater").ToPrometheus();
+        yield return CreateMetric("sensor_temperature_celsius", data.OutsideTemperature).SetTag("name", "Outside").ToPrometheus();
+        yield return CreateMetric("sensor_temperature_celsius", data.FlowTemperature).SetTag("name", "Flow").ToPrometheus();
+        yield return CreateMetric("sensor_pressure_bar", data.HeatingCircuitPressure).SetTag("name", "HeatingCircuit").ToPrometheus();
+        yield return CreateMetric("sensor_flame_on", data.FlameOn ? 1 : 0).SetTag("name", "Flame").ToPrometheus();
     }
 
     private IEnumerable<string> ConvertToPrometheus(EnvSensorInfo info)

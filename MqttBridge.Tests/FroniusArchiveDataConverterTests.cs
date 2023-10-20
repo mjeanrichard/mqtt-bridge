@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using MqttBridge.Models;
 using MqttBridge.Models.Data;
+using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Input;
 using MQTTnet.Client;
 using Newtonsoft.Json;

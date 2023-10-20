@@ -4,6 +4,7 @@ using MqttBridge.Configuration;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
+using MqttBridge.Models.Data.Remocon;
 using MqttBridge.Models.Data.Sensor;
 
 namespace MqttBridge.Processors;
@@ -46,19 +47,31 @@ public class MongoProcessor
 
     public async Task ProcessAsync(GasMeterData data)
     {
-        FilterDefinition<GasMeterData> EnvFilter(GasMeterData dataPoint) => Builders<GasMeterData>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc);
-        await UploadAsync(new[] { data }, "GasMeter", EnvFilter);
+        await UploadAsync(new[] { data }, "GasMeter", null);
     }
 
-    private async Task UploadAsync<T>(IEnumerable<T> data, string collectionName, Func<T, FilterDefinition<T>> filterBuilder) where T : IDataModel
+    public async Task ProcessAsync(RemoconModel data)
+    {
+        await UploadAsync(new[] { data }, "Heating", null);
+    }
+
+    private async Task UploadAsync<T>(IEnumerable<T> data, string collectionName, Func<T, FilterDefinition<T>>? filterBuilder) where T : IDataModel
     {
         IMongoCollection<T> collection = _database.GetCollection<T>(collectionName);
 
         List<WriteModel<T>> bulkOps = new(100);
         foreach (T dataPoint in data)
         {
-            ReplaceOneModel<T> upsertOne = new(filterBuilder(dataPoint), dataPoint) { IsUpsert = true };
-            bulkOps.Add(upsertOne);
+            if (filterBuilder != null)
+            {
+                ReplaceOneModel<T> upsertOne = new(filterBuilder(dataPoint), dataPoint) { IsUpsert = true };
+                bulkOps.Add(upsertOne);
+            }
+            else
+            {
+                InsertOneModel<T> insertOne = new(dataPoint);
+                bulkOps.Add(insertOne);
+            }
 
             if (bulkOps.Count >= 100)
             {
