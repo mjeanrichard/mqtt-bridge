@@ -16,13 +16,13 @@ public class FroniusDailySubscriber
         _logger = logger;
     }
 
-    public async Task ProcessAsync(FroniusDailyModel message)
+    public async Task ProcessAsync(FroniusDailyMessage message)
     {
         IEnumerable<FroniusArchiveData> archiveDatas = Map(message);
         await _publisher.PublishAsync(archiveDatas.ToList());
     }
 
-    public IEnumerable<FroniusArchiveData> Map(FroniusDailyModel message)
+    public IEnumerable<FroniusArchiveData> Map(FroniusDailyMessage message)
     {
         PowerData previousPowerData = new();
         foreach (PowerDataPoint dataPoint in message.Data.OrderBy(d => d.Seconds))

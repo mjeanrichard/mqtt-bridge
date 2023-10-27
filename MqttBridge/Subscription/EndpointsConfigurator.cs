@@ -56,7 +56,7 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                     )
 
                     // Consume the samples/basic topic
-                    .AddMqttInbound<FroniusDailyModel>("devices/philoweg/pva/daily", "MB_FroniusArchive" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<FroniusDailyModel>())
+                    .AddMqttInbound<FroniusDailyMessage>("devices/philoweg/pva/daily", "MB_FroniusArchive" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<FroniusDailyMessage>())
                     .AddMqttInbound<EnvSensorInfoMessage>("devices/philoweg/+/info", "MB_EnvSensorInfo" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorInfoMessage>())
                     .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorMeasurement>())
                     .AddMqttInbound<GasMeterMessage>("devices/philoweg/gas/+", "MB_GasMeter" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<GasMeterMessage>())

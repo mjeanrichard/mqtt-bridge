@@ -1,7 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using MqttBridge.Clients;
 using MqttBridge.Configuration;
@@ -22,6 +25,15 @@ public class Program
     public static HostApplicationBuilder Configure()
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+
+        builder.Logging.AddSimpleConsole(options =>
+        {
+            options.IncludeScopes = true;
+            options.SingleLine = true;
+            options.ColorBehavior = LoggerColorBehavior.Disabled;
+            options.UseUtcTimestamp = true;
+            options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss ";
+        });
 
         IHostEnvironment env = builder.Environment;
         builder.Configuration
@@ -65,7 +77,7 @@ public class Program
             .AddEndpointsConfigurator<EndpointsConfigurator>();
     }
 
-    private static void SetupMongoDb()
+    public static void SetupMongoDb()
     {
         ConventionPack pack = new()
         {
@@ -73,5 +85,6 @@ public class Program
         };
 
         ConventionRegistry.Register("EnumStringConvention", pack, t => true);
+        BsonSerializer.RegisterSerializer(BsonDateOnlySerializer.Instance);
     }
 }

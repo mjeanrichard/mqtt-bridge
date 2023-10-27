@@ -1,8 +1,8 @@
 namespace MqttBridge.Models.Input
 {
-    public class FroniusDailyModel
+    public class FroniusDailyMessage
     {
-        public FroniusDailyModel()
+        public FroniusDailyMessage()
         {
             Data = new List<PowerDataPoint>();
         }

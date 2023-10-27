@@ -33,6 +33,12 @@ public class MongoProcessor
         await UploadAsync(pvaData, "DetailedPowerData", PvaFilter);
     }
 
+    public async Task ProcessAsync(List<DailyEnergyModel> data)
+    {
+        FilterDefinition<DailyEnergyModel> PvaFilter(DailyEnergyModel dataPoint) => Builders<DailyEnergyModel>.Filter.Where(x => x.Date == dataPoint.Date);
+        await UploadAsync(data, "DailyEnergyData", PvaFilter);
+    }
+
     public async Task ProcessAsync(List<EnvSensorData> envSensorData)
     {
         FilterDefinition<EnvSensorData> EnvFilter(EnvSensorData dataPoint) => Builders<EnvSensorData>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Name == dataPoint.Name && x.Device == dataPoint.Device);
@@ -59,7 +65,7 @@ public class MongoProcessor
     {
         IMongoCollection<T> collection = _database.GetCollection<T>(collectionName);
 
-        List<WriteModel<T>> bulkOps = new(100);
+        List<WriteModel<T>> bulkOps = new(1000);
         foreach (T dataPoint in data)
         {
             if (filterBuilder != null)
@@ -73,7 +79,7 @@ public class MongoProcessor
                 bulkOps.Add(insertOne);
             }
 
-            if (bulkOps.Count >= 100)
+            if (bulkOps.Count >= 1000)
             {
                 await collection.BulkWriteAsync(bulkOps);
                 bulkOps.Clear();
