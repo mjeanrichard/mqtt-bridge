@@ -28,22 +28,19 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongodb:27017/
 
-  influxdb:
-    image: influxdb:latest
+  victoria:
+    image: victoriametrics/victoria-metrics:latest
     ports:
-      - 8086:8086
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_USERNAME: root
-      DOCKER_INFLUXDB_INIT_PASSWORD: password
-      DOCKER_INFLUXDB_INIT_ORG: testorg
-      DOCKER_INFLUXDB_INIT_BUCKET: testbucket
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: secrettoken
+      - 8428:8428
+    command:
+      - "-retentionPeriod=5y"
+    #environment:
 
-  mqttbridge:
-    image: ${DOCKER_REGISTRY-}mqttbridge
-    environment:
-      DOTNET_ENVIRONMENT: development
-    build:
-      context: .
-      dockerfile: MqttBridge/Dockerfile
+
+  #mqttbridge:
+  #  image: ${DOCKER_REGISTRY-}mqttbridge
+  #  environment:
+  #    DOTNET_ENVIRONMENT: development
+  #  build:
+  #    context: .
+  #    dockerfile: MqttBridge/Dockerfile

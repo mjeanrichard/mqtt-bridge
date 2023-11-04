@@ -97,7 +97,7 @@ public class TestApplication : IAsyncDisposable
     {
         _cancellationTokenSource = new CancellationTokenSource();
 
-        _hostBuilder = Program.Configure();
+        _hostBuilder = Program.ConfigureHost(new CommandLineOptions());
         ConfigureTestServices(_hostBuilder.Services);
 
         _host = _hostBuilder.Build();

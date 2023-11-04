@@ -1,30 +1,20 @@
-﻿using Microsoft.Extensions.Options;
-using MongoDB.Driver;
-using MqttBridge.Configuration;
+﻿using MongoDB.Driver;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Remocon;
 using MqttBridge.Models.Data.Sensor;
+using MqttBridge.Scrapers;
 
 namespace MqttBridge.Processors;
 
 public class MongoProcessor
 {
-    private readonly MongoDbSettings _mongoSettings;
-    private readonly MongoClient _mongoClient;
     private readonly IMongoDatabase _database;
 
-    public MongoProcessor(IOptions<MongoDbSettings> mongoSettings)
+    public MongoProcessor(MongoClientFactory clientFactory)
     {
-        _mongoSettings = mongoSettings.Value;
-        MongoClientSettings clientSettings = new();
-        clientSettings.Server = new MongoServerAddress(_mongoSettings.Host);
-        clientSettings.Credential = MongoCredential.CreateCredential("admin", _mongoSettings.Username, _mongoSettings.Password);
-        clientSettings.UseTls = _mongoSettings.UseTls;
-        clientSettings.AllowInsecureTls = true;
-        _mongoClient = new MongoClient(clientSettings);
-        _database = _mongoClient.GetDatabase(_mongoSettings.Database);
+        _database = clientFactory.GetDatabase();
     }
 
     public async Task ProcessAsync(List<FroniusArchiveData> pvaData)

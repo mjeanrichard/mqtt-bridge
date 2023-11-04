@@ -16,6 +16,7 @@
     <PackageReference Include="MongoDB.Driver" Version="2.20.0" />
     <PackageReference Include="NSubstitute" Version="5.0.0" />
     <PackageReference Include="Silverback.Integration.MQTT" Version="4.3.2" />
+    <PackageReference Include="System.CommandLine.DragonFruit" Version="0.4.0-alpha.22272.1" />
   </ItemGroup>
 
   <ItemGroup>

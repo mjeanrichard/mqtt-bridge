@@ -16,13 +16,44 @@ namespace MqttBridge;
 
 public class Program
 {
-    private static async Task Main(string[] args)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="mqtt">Run continuously and listen on mqtt for messages.</param>
+    /// <param name="remocon">Periodically load data from the solar API.</param>
+    /// <param name="republish">Republish data from MongoDb to Prometheus</param>
+    /// <param name="startDate">First date to scrape Data from.</param>
+    /// <param name="endDate">Last Date to publish Data from</param>
+    /// <returns></returns>
+    private static async Task Main(bool mqtt, bool remocon, bool republish, DateOnly? startDate, DateOnly? endDate)
     {
-        using IHost host = Configure().Build();
-        await host.RunAsync();
+        CommandLineOptions options = new() { Mqtt = mqtt, Remocon = remocon, Republish = republish, StartDate = startDate, EndDate = endDate };
+
+        using IHost host = Configure(options).Build();
+
+        if (republish)
+        {
+            ReprocessWorker worker = host.Services.GetRequiredService<ReprocessWorker>();
+            await worker.RunAsync(CancellationToken.None);
+        }
+        else
+        {
+            await host.RunAsync();
+        }
     }
 
-    public static HostApplicationBuilder Configure()
+    private static HostApplicationBuilder Configure(CommandLineOptions commandLineOptions)
+    {
+        HostApplicationBuilder host = ConfigureHost(commandLineOptions);
+
+        if (commandLineOptions.Remocon)
+        {
+            host.Services.AddHostedService<RemoconScraperService>();
+        }
+        return host;
+    }
+
+    public static HostApplicationBuilder ConfigureHost(CommandLineOptions commandLineOptions)
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
@@ -53,17 +84,20 @@ public class Program
         builder.Services.Configure<RemoconSettings>(
             builder.Configuration.GetRequiredSection(RemoconSettings.Name));
 
-        ConfigureServices(builder.Services);
+        ConfigureServices(builder.Services, builder.Configuration, commandLineOptions);
 
         SetupMongoDb();
 
         return builder;
     }
 
-    private static void ConfigureServices(IServiceCollection services)
+    private static void ConfigureServices(IServiceCollection services, ConfigurationManager configuration, CommandLineOptions commandLineOptions)
     {
         services.AddSingleton<RemoconClient>();
-        services.AddHostedService<RemoconScraperService>();
+        services.AddSingleton<MongoClientFactory>();
+        services.AddSingleton<MongoScraper>();
+        services.AddSingleton(commandLineOptions);
+        services.AddSingleton<ReprocessWorker>();
 
         services
             .AddSilverback()
@@ -72,16 +106,25 @@ public class Program
             .AddScopedSubscriber<EnvSensorInfoSubscriber>()
             .AddScopedSubscriber<GasMeterSubscriber>()
             .AddSingletonSubscriber<MongoProcessor>()
-            .AddSingletonSubscriber<PrometheusProcessor>()
-            .WithConnectionToMessageBroker(options => options.AddMqtt())
-            .AddEndpointsConfigurator<EndpointsConfigurator>();
+            .AddSingletonSubscriber<PrometheusProcessor>();
+
+
+        MqttSettings mqttSettings = new();
+        configuration.GetRequiredSection(MqttSettings.Name).Bind(mqttSettings);
+        if (commandLineOptions.Mqtt && mqttSettings.Enabled)
+        {
+            services.AddSilverback()
+                .WithConnectionToMessageBroker(options => options.AddMqtt())
+                .AddEndpointsConfigurator<EndpointsConfigurator>();
+        }
     }
 
     public static void SetupMongoDb()
     {
         ConventionPack pack = new()
         {
-            new EnumRepresentationConvention(BsonType.String)
+            new EnumRepresentationConvention(BsonType.String),
+            new IgnoreExtraElementsConvention(true)
         };
 
         ConventionRegistry.Register("EnumStringConvention", pack, t => true);

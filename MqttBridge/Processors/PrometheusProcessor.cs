@@ -36,6 +36,11 @@ public class PrometheusProcessor
         await SendToPrometheus(ConvertToPrometheus(pvaData));
     }
 
+    public async Task ProcessAsync(List<DailyEnergyModel> data)
+    {
+        await SendToPrometheus(ConvertToPrometheus(data));
+    }
+
     public async Task ProcessAsync(EnvSensorInfo info)
     {
         await SendToPrometheus(ConvertToPrometheus(info));
@@ -74,8 +79,12 @@ public class PrometheusProcessor
         HttpRequestMessage request = new(HttpMethod.Post, _prometheusSettings.Url);
         request.Content = content;
 
-        string encodedCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join(':', _prometheusSettings.Username, _prometheusSettings.Password)));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", encodedCredentials);
+        if (!string.IsNullOrWhiteSpace(_prometheusSettings.Username))
+        {
+            string encodedCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join(':', _prometheusSettings.Username, _prometheusSettings.Password)));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", encodedCredentials);
+        }
+
         using HttpResponseMessage responseMessage = await _httpClient.SendAsync(request);
         responseMessage.EnsureSuccessStatusCode();
     }
@@ -86,21 +95,39 @@ public class PrometheusProcessor
         {
             DateTimeOffset dto = data.TimestampUtc;
             long ts = dto.ToUnixTimeMilliseconds();
-            yield return new Metric("pva_power_imported_joules") { Timestamp = ts, Value = data.CumulativePerDay.Imported * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_imported_joules") { Timestamp = ts, Value = data.CumulativePerDay.Imported * 3600 }.ToPrometheus();
             yield return new Metric("pva_power_importing_watts") { Timestamp = ts, Value = data.Instant.Imported }.ToPrometheus();
-            yield return new Metric("pva_power_exported_joules") { Timestamp = ts, Value = data.CumulativePerDay.Exported * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_exported_joules") { Timestamp = ts, Value = data.CumulativePerDay.Exported * 3600 }.ToPrometheus();
             yield return new Metric("pva_power_exporting_watts") { Timestamp = ts, Value = data.Instant.Exported }.ToPrometheus();
-            yield return new Metric("pva_power_produced_joules") { Timestamp = ts, Value = data.CumulativePerDay.Produced * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_produced_joules") { Timestamp = ts, Value = data.CumulativePerDay.Produced * 3600 }.ToPrometheus();
             yield return new Metric("pva_power_producing_watts") { Timestamp = ts, Value = data.Instant.Produced }.ToPrometheus();
 
-            yield return new Metric("pva_power_directly_consumed_joules") { Timestamp = ts, Value = data.CumulativePerDay.OhmPilotConsumed * 3600 }.SetTag("consumer", "OhmPilot").ToPrometheus();
+            yield return new Metric("pva_energy_directly_consumed_joules") { Timestamp = ts, Value = data.CumulativePerDay.OhmPilotConsumed * 3600 }.SetTag("consumer", "OhmPilot").ToPrometheus();
             yield return new Metric("pva_power_directly_consuming_watts") { Timestamp = ts, Value = data.Instant.OhmPilotConsumed }.SetTag("consumer", "OhmPilot").ToPrometheus();
 
-            yield return new Metric("pva_power_directly_consumed_joules") { Timestamp = ts, Value = data.CumulativePerDay.DirectlyConsumed * 3600 }.SetTag("consumer", "Haus").ToPrometheus();
+            yield return new Metric("pva_energy_directly_consumed_joules") { Timestamp = ts, Value = data.CumulativePerDay.DirectlyConsumed * 3600 }.SetTag("consumer", "Haus").ToPrometheus();
             yield return new Metric("pva_power_directly_consuming_watts") { Timestamp = ts, Value = data.Instant.DirectlyConsumed }.SetTag("consumer", "Haus").ToPrometheus();
 
             yield return new Metric("pva_temperature_celsius") { Timestamp = ts, Value = data.TemperaturePowerstage }.SetTag("device", "Powerstage").ToPrometheus();
             yield return new Metric("pva_temperature_celsius") { Timestamp = ts, Value = data.TemperatureOhmPilot1 }.SetTag("device", "OhmPilot1").ToPrometheus();
+        }
+    }
+
+    private IEnumerable<string> ConvertToPrometheus(IEnumerable<DailyEnergyModel> dataPoints)
+    {
+        TimeZoneInfo timezone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Zurich");
+
+        foreach (DailyEnergyModel data in dataPoints)
+        {
+            TimeSpan utcOffset = timezone.GetUtcOffset(data.TimestampUtc);
+
+            DateTimeOffset midday = new(data.Date.Year, data.Date.Month, data.Date.Day, 12, 0, 0, utcOffset);
+            long ts = midday.ToUnixTimeMilliseconds();
+            yield return new Metric("pva_energy_day_imported_joules") { Timestamp = ts, Value = data.Imported * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_day_exported_joules") { Timestamp = ts, Value = data.Exported * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_day_produced_joules") { Timestamp = ts, Value = data.Produced * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_day_directly_consumed_joules") { Timestamp = ts, Value = data.OhmPilotConsumed * 3600 }.SetTag("consumer", "OhmPilot").ToPrometheus();
+            yield return new Metric("pva_energy_day_directly_consumed_joules") { Timestamp = ts, Value = data.DirectlyConsumed * 3600 }.SetTag("consumer", "Haus").ToPrometheus();
         }
     }
 
@@ -148,7 +175,7 @@ public class PrometheusProcessor
 
             Metric metric = new(metricName) { Timestamp = ts, Value = data.Value };
             metric.SetTag("device", data.Device);
-            metric.SetTag("test", data.IsTestDevice.ToString(CultureInfo.InvariantCulture));
+            metric.SetTag("test", data.IsTestDevice.ToString(CultureInfo.InvariantCulture).ToLowerInvariant());
             metric.SetTag("unit", data.Unit.ToString("G"));
             metric.SetTag("type", data.Type.ToString("G"));
             metric.SetTag("name", data.Name);
