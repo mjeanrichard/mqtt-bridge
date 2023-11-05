@@ -31,13 +31,17 @@ public class Program
 
         using IHost host = Configure(options).Build();
 
+        ILogger logger = host.Services.GetRequiredService<ILogger>();
         if (republish)
         {
+            logger.LogInformation("Republishing Data.");
             ReprocessWorker worker = host.Services.GetRequiredService<ReprocessWorker>();
             await worker.RunAsync(CancellationToken.None);
+            logger.LogInformation("Done republishing Data.");
         }
         else
         {
+            logger.LogInformation($"Starting workers (Mqtt: {options.Mqtt}, Remocon: {options.Remocon}).");
             await host.RunAsync();
         }
     }
