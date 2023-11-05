@@ -20,6 +20,7 @@ public class EnvSensorInfoSubscriber
 
     public async Task ProcessAsync(EnvSensorInfoMessage message)
     {
+        _logger.LogDebug("Received EnvSensor Info message.");
         EnvSensorInfo info = Map(message);
         await _publisher.PublishAsync(info);
     }

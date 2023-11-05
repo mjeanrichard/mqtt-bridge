@@ -20,6 +20,7 @@ public class EnvSensorSubscriber
 
     public async Task ProcessAsync(EnvSensorMeasurement message)
     {
+        _logger.LogDebug("Received EnvSensor message.");
         IEnumerable<EnvSensorData> archiveDatas = Map(message);
         await _publisher.PublishAsync(archiveDatas.ToList());
     }

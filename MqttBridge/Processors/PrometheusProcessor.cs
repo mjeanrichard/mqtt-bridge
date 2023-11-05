@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
 using MqttBridge.Models;
-using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Remocon;
@@ -16,7 +15,9 @@ namespace MqttBridge.Processors;
 public class PrometheusProcessor
 {
     private readonly ILogger<PrometheusProcessor> _logger;
+
     private readonly HttpClient _httpClient;
+
     private readonly PrometheusSettings _prometheusSettings;
 
     public PrometheusProcessor(IOptions<PrometheusSettings> prometheusSettings, ILogger<PrometheusProcessor> logger)
@@ -28,31 +29,37 @@ public class PrometheusProcessor
 
     public async Task ProcessAsync(List<EnvSensorData> envSensorData)
     {
+        _logger.LogInformation($"Writing '{nameof(EnvSensorData)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(envSensorData));
     }
 
     public async Task ProcessAsync(List<FroniusArchiveData> pvaData)
     {
+        _logger.LogInformation($"Writing '{nameof(FroniusArchiveData)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(pvaData));
     }
 
     public async Task ProcessAsync(List<DailyEnergyModel> data)
     {
+        _logger.LogInformation($"Writing '{nameof(DailyEnergyModel)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(data));
     }
 
     public async Task ProcessAsync(EnvSensorInfo info)
     {
+        _logger.LogInformation($"Writing '{nameof(EnvSensorInfo)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(info));
     }
 
     public async Task ProcessAsync(GasMeterData data)
     {
+        _logger.LogInformation($"Writing '{nameof(GasMeterData)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(data));
     }
 
     public async Task ProcessAsync(RemoconModel data)
     {
+        _logger.LogInformation($"Writing '{nameof(RemoconModel)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(data));
     }
 

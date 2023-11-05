@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
@@ -10,10 +11,13 @@ namespace MqttBridge.Processors;
 
 public class MongoProcessor
 {
+    private readonly ILogger<MongoProcessor> _logger;
+
     private readonly IMongoDatabase _database;
 
-    public MongoProcessor(MongoClientFactory clientFactory)
+    public MongoProcessor(MongoClientFactory clientFactory, ILogger<MongoProcessor> logger)
     {
+        _logger = logger;
         _database = clientFactory.GetDatabase();
     }
 
@@ -53,6 +57,7 @@ public class MongoProcessor
 
     private async Task UploadAsync<T>(IEnumerable<T> data, string collectionName, Func<T, FilterDefinition<T>>? filterBuilder) where T : IDataModel
     {
+        _logger.LogInformation($"Writing '{typeof(T).Name}' data to MongoDb.");
         IMongoCollection<T> collection = _database.GetCollection<T>(collectionName);
 
         List<WriteModel<T>> bulkOps = new(1000);

@@ -18,6 +18,7 @@ public class GasMeterSubscriber
 
     public async Task ProcessAsync(GasMeterMessage message)
     {
+        _logger.LogDebug("Received Gas Meter message.");
         GasMeterData data = Map(message);
         await _publisher.PublishAsync(data);
     }

@@ -24,6 +24,7 @@ public class FroniusDailySubscriber
 
     public IEnumerable<FroniusArchiveData> Map(FroniusDailyMessage message)
     {
+        _logger.LogDebug("Received Fronius Detail message.");
         PowerData previousPowerData = new();
         foreach (PowerDataPoint dataPoint in message.Data.OrderBy(d => d.Seconds))
         {
