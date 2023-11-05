@@ -31,7 +31,7 @@ public class Program
 
         using IHost host = Configure(options).Build();
 
-        ILogger logger = host.Services.GetRequiredService<ILogger>();
+        ILogger<Program> logger = host.Services.GetRequiredService<ILogger<Program>>();
         if (republish)
         {
             logger.LogInformation("Republishing Data.");
