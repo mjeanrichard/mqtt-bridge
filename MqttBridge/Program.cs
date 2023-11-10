@@ -22,12 +22,13 @@ public class Program
     /// <param name="mqtt">Run continuously and listen on mqtt for messages.</param>
     /// <param name="remocon">Periodically load data from the solar API.</param>
     /// <param name="republish">Republish data from MongoDb to Prometheus</param>
+    /// <param name="delete">Delete data from Prometheus before republish</param>
     /// <param name="startDate">First date to scrape Data from.</param>
     /// <param name="endDate">Last Date to publish Data from</param>
     /// <returns></returns>
-    private static async Task Main(bool mqtt, bool remocon, bool republish, DateOnly? startDate, DateOnly? endDate)
+    private static async Task Main(bool mqtt, bool remocon, bool republish, bool delete, DateOnly? startDate, DateOnly? endDate)
     {
-        CommandLineOptions options = new() { Mqtt = mqtt, Remocon = remocon, Republish = republish, StartDate = startDate, EndDate = endDate };
+        CommandLineOptions options = new() { Mqtt = mqtt, Remocon = remocon, Republish = republish, StartDate = startDate, EndDate = endDate, Delete = delete };
 
         using IHost host = Configure(options).Build();
 
@@ -100,6 +101,7 @@ public class Program
         services.AddSingleton<RemoconClient>();
         services.AddSingleton<MongoClientFactory>();
         services.AddSingleton<MongoScraper>();
+        services.AddSingleton<PrometheusClient>();
         services.AddSingleton(commandLineOptions);
         services.AddSingleton<ReprocessWorker>();
 

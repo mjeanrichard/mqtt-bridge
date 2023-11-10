@@ -10,4 +10,6 @@ public class CommandLineOptions
     public bool Remocon { get; set; }
 
     public bool Republish { get; set; }
+
+    public bool Delete { get; set; }
 }
