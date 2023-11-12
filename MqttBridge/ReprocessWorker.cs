@@ -1,7 +1,4 @@
-﻿using System.Data.OleDb;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using MqttBridge.Configuration;
+﻿using Microsoft.Extensions.Logging;
 using MqttBridge.Processors;
 using MqttBridge.Scrapers;
 
@@ -27,14 +24,31 @@ public class ReprocessWorker
 
     public async Task RunAsync(CancellationToken stoppingToken)
     {
-        if (_commandLineOptions.Delete)
-        {
-            await _prometheusClient.DeleteSeriesData($"{{__name__=~\"pva_.*\"}}");
-        }
-
-        _logger.LogInformation("Reprocessing Data from mongo db");
-        await _mongoScraper.ProcessPvaDetailAsync(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
-        _logger.LogInformation("Reprocessed all data.");
+        _logger.LogInformation("Reprocessing Data from mongo db for PVA");
+        await ReprocessPva();
+        _logger.LogInformation("Reprocessing Data from mongo db for EnvSensor");
+        await ReprocessEnvSensor();
+        _logger.LogInformation("Reprocessing done.");
     }
 
+
+    private async Task ReprocessPva()
+    {
+        if (_commandLineOptions.Delete)
+        {
+            await _prometheusClient.DeleteSeriesData("{__name__=~\"pva_.*\"}");
+        }
+
+        await _mongoScraper.ProcessPvaDetailAsync(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
+    }
+
+    private async Task ReprocessEnvSensor()
+    {
+        if (_commandLineOptions.Delete)
+        {
+            await _prometheusClient.DeleteSeriesData("{__name__=~ \"sensor_.*\", device!=\"Heizung\"}");
+        }
+
+        await _mongoScraper.ProcessSensorData(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
+    }
 }
