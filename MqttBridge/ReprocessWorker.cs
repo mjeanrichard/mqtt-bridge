@@ -24,31 +24,40 @@ public class ReprocessWorker
 
     public async Task RunAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Reprocessing Data from mongo db for PVA");
-        await ReprocessPva();
-        _logger.LogInformation("Reprocessing Data from mongo db for EnvSensor");
-        await ReprocessEnvSensor();
+        _logger.LogInformation("Reprocessing Data from mongo db.");
+        if (_commandLineOptions.Delete)
+        {
+            await _prometheusClient.DeleteSeriesData("{__name__=~\"pva_.*\"}");
+            await _prometheusClient.DeleteSeriesData("{__name__=~\"sensor_.*\"}");
+        }
+
+
+        await Task.WhenAll(
+            ReprocessPva(),
+            ReprocessGasMeter(),
+            ReprocessHeating(),
+            ReprocessEnvSensor());
         _logger.LogInformation("Reprocessing done.");
     }
 
 
     private async Task ReprocessPva()
     {
-        if (_commandLineOptions.Delete)
-        {
-            await _prometheusClient.DeleteSeriesData("{__name__=~\"pva_.*\"}");
-        }
-
         await _mongoScraper.ProcessPvaDetailAsync(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
     }
 
     private async Task ReprocessEnvSensor()
     {
-        if (_commandLineOptions.Delete)
-        {
-            await _prometheusClient.DeleteSeriesData("{__name__=~ \"sensor_.*\", device!=\"Heizung\"}");
-        }
-
         await _mongoScraper.ProcessSensorData(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
+    }
+
+    private async Task ReprocessGasMeter()
+    {
+        await _mongoScraper.ProcessGasMeter(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
+    }
+
+    private async Task ReprocessHeating()
+    {
+        await _mongoScraper.ProcessHeating(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
     }
 }

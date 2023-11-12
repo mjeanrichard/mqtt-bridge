@@ -39,19 +39,19 @@ public class PrometheusProcessor
         await SendToPrometheus(ConvertToPrometheus(data));
     }
 
-    public async Task ProcessAsync(EnvSensorInfo info)
+    public async Task ProcessAsync(List<EnvSensorInfo> info)
     {
         _logger.LogInformation($"Writing '{nameof(EnvSensorInfo)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(info));
     }
 
-    public async Task ProcessAsync(GasMeterData data)
+    public async Task ProcessAsync(List<GasMeterData> data)
     {
         _logger.LogInformation($"Writing '{nameof(GasMeterData)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(data));
     }
 
-    public async Task ProcessAsync(RemoconModel data)
+    public async Task ProcessAsync(List<RemoconModel> data)
     {
         _logger.LogInformation($"Writing '{nameof(RemoconModel)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(data));
@@ -123,36 +123,45 @@ public class PrometheusProcessor
     }
 
 
-    private IEnumerable<string> ConvertToPrometheus(GasMeterData data)
+    private IEnumerable<string> ConvertToPrometheus(IEnumerable<GasMeterData> dataPoints)
     {
-        DateTimeOffset dto = data.TimestampUtc;
-        long ts = dto.ToUnixTimeMilliseconds();
-        yield return new Metric("sensor_volume_cubicmeters") { Timestamp = ts, Value = data.Volume }.SetTag("device", "GasMeter").SetTag("device_id", data.DeviceId).ToPrometheus();
-        yield return new Metric("sensor_battery_volts") { Timestamp = ts, Value = data.Battery }.SetTag("device", "GasMeter").SetTag("device_id", data.DeviceId).ToPrometheus();
+        foreach (GasMeterData data in dataPoints)
+        {
+            DateTimeOffset dto = data.TimestampUtc;
+            long ts = dto.ToUnixTimeMilliseconds();
+            yield return new Metric("sensor_volume_cubicmeters") { Timestamp = ts, Value = data.Volume }.SetTag("device", "GasMeter").SetTag("device_id", data.DeviceId).ToPrometheus();
+            yield return new Metric("sensor_battery_volts") { Timestamp = ts, Value = data.Battery }.SetTag("device", "GasMeter").SetTag("device_id", data.DeviceId).ToPrometheus();
+        }
     }
 
-    private IEnumerable<string> ConvertToPrometheus(RemoconModel data)
+    private IEnumerable<string> ConvertToPrometheus(IEnumerable<RemoconModel> dataPoints)
     {
-        DateTimeOffset dto = data.TimestampUtc;
-        long ts = dto.ToUnixTimeMilliseconds();
+        foreach (RemoconModel data in dataPoints)
+        {
+            DateTimeOffset dto = data.TimestampUtc;
+            long ts = dto.ToUnixTimeMilliseconds();
 
-        Metric CreateMetric(string name, double value) => new Metric(name) { Timestamp = ts, Value = value }.SetTag("device", "Heizung").SetTag("device_id", data.GatewayId);
+            Metric CreateMetric(string name, double value) => new Metric(name) { Timestamp = ts, Value = value }.SetTag("device", "Heizung").SetTag("device_id", data.GatewayId);
 
-        yield return CreateMetric("sensor_temperature_celsius", data.HotWaterTemperature).SetTag("name", "HotWater").ToPrometheus();
-        yield return CreateMetric("sensor_temperature_celsius", data.OutsideTemperature).SetTag("name", "Outside").ToPrometheus();
-        yield return CreateMetric("sensor_temperature_celsius", data.FlowTemperature).SetTag("name", "Flow").ToPrometheus();
-        yield return CreateMetric("sensor_pressure_bar", data.HeatingCircuitPressure).SetTag("name", "HeatingCircuit").ToPrometheus();
-        yield return CreateMetric("sensor_flame_on", data.FlameOn ? 1 : 0).SetTag("name", "Flame").ToPrometheus();
+            yield return CreateMetric("sensor_temperature_celsius", data.HotWaterTemperature).SetTag("name", "HotWater").ToPrometheus();
+            yield return CreateMetric("sensor_temperature_celsius", data.OutsideTemperature).SetTag("name", "Outside").ToPrometheus();
+            yield return CreateMetric("sensor_temperature_celsius", data.FlowTemperature).SetTag("name", "Flow").ToPrometheus();
+            yield return CreateMetric("sensor_pressure_bar", data.HeatingCircuitPressure).SetTag("name", "HeatingCircuit").ToPrometheus();
+            yield return CreateMetric("sensor_flame_on", data.FlameOn ? 1 : 0).SetTag("name", "Flame").ToPrometheus();
+        }
     }
 
-    private IEnumerable<string> ConvertToPrometheus(EnvSensorInfo info)
+    private IEnumerable<string> ConvertToPrometheus(IEnumerable<EnvSensorInfo> dataPoints)
     {
-        DateTimeOffset dto = info.TimestampUtc;
-        long ts = dto.ToUnixTimeMilliseconds();
-        Dictionary<string, string> tags = new() { { "device", info.Device }, { "ip", info.Ip } };
-        yield return new Metric("sensor_connect_time_seconds") { Timestamp = ts, Value = info.ConnectTime, Tags = tags }.ToPrometheus();
-        yield return new Metric("sensor_firmware_version") { Timestamp = ts, Value = info.FwVersion }.ToPrometheus();
-        yield return new Metric("sensor_rssi_db") { Timestamp = ts, Value = info.Rssi }.ToPrometheus();
+        foreach (EnvSensorInfo info in dataPoints)
+        {
+            DateTimeOffset dto = info.TimestampUtc;
+            long ts = dto.ToUnixTimeMilliseconds();
+            Dictionary<string, string> tags = new() { { "device", info.Device }, { "ip", info.Ip } };
+            yield return new Metric("sensor_connect_time_seconds") { Timestamp = ts, Value = info.ConnectTime, Tags = tags }.ToPrometheus();
+            yield return new Metric("sensor_firmware_version") { Timestamp = ts, Value = info.FwVersion }.ToPrometheus();
+            yield return new Metric("sensor_rssi_db") { Timestamp = ts, Value = info.Rssi }.ToPrometheus();
+        }
     }
 
     private IEnumerable<string> ConvertToPrometheus(IEnumerable<EnvSensorData> dataPoints)

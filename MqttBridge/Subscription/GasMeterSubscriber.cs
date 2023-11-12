@@ -8,6 +8,7 @@ namespace MqttBridge.Subscription;
 public class GasMeterSubscriber
 {
     private readonly ILogger<GasMeterSubscriber> _logger;
+
     private readonly IPublisher _publisher;
 
     public GasMeterSubscriber(ILogger<GasMeterSubscriber> logger, IPublisher publisher)
@@ -19,7 +20,7 @@ public class GasMeterSubscriber
     public async Task ProcessAsync(GasMeterMessage message)
     {
         _logger.LogDebug("Received Gas Meter message.");
-        GasMeterData data = Map(message);
+        List<GasMeterData> data = new() { Map(message) };
         await _publisher.PublishAsync(data);
     }
 

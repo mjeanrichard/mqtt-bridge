@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MqttBridge.Models.Data;
+using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
+using MqttBridge.Models.Data.Remocon;
 using MqttBridge.Models.Data.Sensor;
 using MqttBridge.Processors;
 
@@ -24,70 +26,60 @@ public class MongoScraper
 
     public async Task ProcessPvaDetailAsync(DateOnly? startDate, DateOnly? endDate)
     {
-        IMongoCollection<FroniusArchiveData> collection = _database.GetCollection<FroniusArchiveData>("DetailedPowerData");
-
-        (DateOnly start, DateOnly end) = await GetDateRangeAsync(startDate, endDate, collection);
-
-        async Task DataProcessor(DateTime batchStartDate, DateTime batchEndDate)
-        {
-            FilterDefinition<FroniusArchiveData> filter = Builders<FroniusArchiveData>.Filter.Where(d => d.TimestampUtc >= batchStartDate && d.TimestampUtc < batchEndDate);
-
-            IAsyncCursor<FroniusArchiveData> dataCursor = await collection.FindAsync(filter);
-            List<FroniusArchiveData> data = await dataCursor.ToListAsync();
-
-            if (data.Any())
-            {
-                await _prometheusProcessor.ProcessAsync(data);
-            }
-        }
-
-        await ProcessData(start, end, DataProcessor);
+        await ProcessDataModel<FroniusArchiveData>(startDate, endDate, "DetailedPowerData", data => _prometheusProcessor.ProcessAsync(data));
     }
 
     public async Task ProcessPvaDaily(DateOnly? startDate, DateOnly? endDate)
     {
-        IMongoCollection<DailyEnergyModel> collection = _database.GetCollection<DailyEnergyModel>("DailyEnergyData");
-
-        (DateOnly start, DateOnly end) = await GetDateRangeAsync(startDate, endDate, collection);
-
-        async Task DataProcessor(DateTime batchStartDate, DateTime batchEndDate)
-        {
-            FilterDefinition<DailyEnergyModel> filter = Builders<DailyEnergyModel>.Filter.Where(d => d.TimestampUtc >= batchStartDate && d.TimestampUtc < batchEndDate);
-
-            IAsyncCursor<DailyEnergyModel> dataCursor = await collection.FindAsync(filter);
-            List<DailyEnergyModel> data = await dataCursor.ToListAsync();
-
-            if (data.Any())
-            {
-                await _prometheusProcessor.ProcessAsync(data);
-            }
-        }
-
-        await ProcessData(start, end, DataProcessor);
+        await ProcessDataModel<DailyEnergyModel>(startDate, endDate, "DailyEnergyData", data => _prometheusProcessor.ProcessAsync(data));
     }
 
     public async Task ProcessSensorData(DateOnly? startDate, DateOnly? endDate)
     {
-        IMongoCollection<EnvSensorData> collection = _database.GetCollection<EnvSensorData>("Environment");
+        await ProcessDataModel<EnvSensorData>(startDate, endDate, "Environment", data => _prometheusProcessor.ProcessAsync(data));
+    }
+
+    public async Task ProcessHeating(DateOnly? startDate, DateOnly? endDate)
+    {
+        await ProcessDataModel<RemoconModel>(startDate, endDate, "Heating", data => _prometheusProcessor.ProcessAsync(data));
+    }
+
+    public async Task ProcessGasMeter(DateOnly? startDate, DateOnly? endDate)
+    {
+        await ProcessDataModel<GasMeterData>(startDate, endDate, "GasMeter", data => _prometheusProcessor.ProcessAsync(data));
+    }
+
+    private async Task ProcessDataModel<TEntity>(DateOnly? startDate, DateOnly? endDate, string collectionName, Func<List<TEntity>, Task> publisher) where TEntity : IDataModel
+    {
+        IMongoCollection<TEntity> collection = _database.GetCollection<TEntity>(collectionName);
 
         (DateOnly start, DateOnly end) = await GetDateRangeAsync(startDate, endDate, collection);
 
-        async Task DataProcessor(DateTime batchStartDate, DateTime batchEndDate)
-        {
-            FilterDefinition<EnvSensorData> filter = Builders<EnvSensorData>.Filter.Where(d => d.TimestampUtc >= batchStartDate && d.TimestampUtc < batchEndDate);
+        _logger.LogInformation($"Reprocessing entries from {start:dd.MM.yyy} to {end:dd.MM.yyyy}.");
 
-            IAsyncCursor<EnvSensorData> dataCursor = await collection.FindAsync(filter);
-            List<EnvSensorData> data = await dataCursor.ToListAsync();
+        DateTime endTime = end.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+
+        DateTime batchStartDate = start.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        DateTime batchEndDate = batchStartDate.AddDays(1);
+        while (batchStartDate <= endTime)
+        {
+            _logger.LogInformation($"Processing Mongo Data of {batchStartDate:dd.MM.yyyy}.");
+
+            FilterDefinition<TEntity> filter = Builders<TEntity>.Filter.Where(d => d.TimestampUtc >= batchStartDate && d.TimestampUtc < batchEndDate);
+
+            IAsyncCursor<TEntity> dataCursor = await collection.FindAsync(filter);
+            List<TEntity> data = await dataCursor.ToListAsync();
 
             if (data.Any())
             {
-                await _prometheusProcessor.ProcessAsync(data);
+                await publisher(data);
             }
-        }
 
-        await ProcessData(start, end, DataProcessor);
+            batchStartDate = batchEndDate;
+            batchEndDate = batchStartDate.AddDays(1);
+        }
     }
-    
+
     private async Task<(DateOnly startDate, DateOnly endDate)> GetDateRangeAsync<TEntity>(DateOnly? startDate, DateOnly? endDate, IMongoCollection<TEntity> collection) where TEntity : IDataModel
     {
         if (!startDate.HasValue)
@@ -112,24 +104,5 @@ public class MongoScraper
 
         DateTime dateTime = earliest?.TimestampUtc ?? DateTime.Now;
         return DateOnly.FromDateTime(dateTime);
-    }
-
-    private async Task ProcessData(DateOnly startDate, DateOnly endDate, Func<DateTime, DateTime, Task> dataProcessor)
-    {
-        _logger.LogInformation($"Reprocessing entries from {startDate:dd.MM.yyy} to {endDate:dd.MM.yyyy}.");
-
-        DateTime endTime = endDate.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
-
-        DateTime batchStartDate = startDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-        DateTime batchEndDate = batchStartDate.AddDays(1);
-        while (batchStartDate <= endTime)
-        {
-            _logger.LogInformation($"Processing Mongo Data of {batchStartDate:dd.MM.yyyy}.");
-
-            await dataProcessor(batchStartDate, batchEndDate);
-
-            batchStartDate = batchEndDate;
-            batchEndDate = batchStartDate.AddDays(1);
-        }
     }
 }

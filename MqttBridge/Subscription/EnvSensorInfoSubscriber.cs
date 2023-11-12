@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.Mappings;
 using MqttBridge.Models.Data.Sensor;
 using MqttBridge.Models.Input;
@@ -10,6 +9,7 @@ namespace MqttBridge.Subscription;
 public class EnvSensorInfoSubscriber
 {
     private readonly ILogger<EnvSensorInfoSubscriber> _logger;
+
     private readonly IPublisher _publisher;
 
     public EnvSensorInfoSubscriber(ILogger<EnvSensorInfoSubscriber> logger, IPublisher publisher)
@@ -21,8 +21,9 @@ public class EnvSensorInfoSubscriber
     public async Task ProcessAsync(EnvSensorInfoMessage message)
     {
         _logger.LogDebug("Received EnvSensor Info message.");
-        EnvSensorInfo info = Map(message);
-        await _publisher.PublishAsync(info);
+
+        List<EnvSensorInfo> data = new() { Map(message) };
+        await _publisher.PublishAsync(data);
     }
 
     private EnvSensorInfo Map(EnvSensorInfoMessage message)
