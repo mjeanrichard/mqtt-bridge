@@ -63,7 +63,7 @@ public class MongoScraper
         DateTime batchEndDate = batchStartDate.AddDays(1);
         while (batchStartDate <= endTime)
         {
-            _logger.LogInformation($"Processing Mongo Data of {batchStartDate:dd.MM.yyyy}.");
+            _logger.LogInformation($"Processing '{collectionName}' data of {batchStartDate:dd.MM.yyyy}.");
 
             FilterDefinition<TEntity> filter = Builders<TEntity>.Filter.Where(d => d.TimestampUtc >= batchStartDate && d.TimestampUtc < batchEndDate);
 

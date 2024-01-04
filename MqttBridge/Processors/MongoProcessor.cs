@@ -39,20 +39,20 @@ public class MongoProcessor
         await UploadAsync(envSensorData, "Environment", EnvFilter);
     }
 
-    public async Task ProcessAsync(EnvSensorInfo envSensorInfo)
+    public async Task ProcessAsync(List<EnvSensorInfo> envSensorInfo)
     {
         FilterDefinition<EnvSensorInfo> EnvFilter(EnvSensorInfo dataPoint) => Builders<EnvSensorInfo>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Device == dataPoint.Device);
-        await UploadAsync(new[] { envSensorInfo }, "SensorInfo", EnvFilter);
+        await UploadAsync(envSensorInfo, "SensorInfo", EnvFilter);
     }
 
-    public async Task ProcessAsync(GasMeterData data)
+    public async Task ProcessAsync(List<GasMeterData> data)
     {
-        await UploadAsync(new[] { data }, "GasMeter", null);
+        await UploadAsync(data, "GasMeter", null);
     }
 
-    public async Task ProcessAsync(RemoconModel data)
+    public async Task ProcessAsync(List<RemoconModel> data)
     {
-        await UploadAsync(new[] { data }, "Heating", null);
+        await UploadAsync(data, "Heating", null);
     }
 
     private async Task UploadAsync<T>(IEnumerable<T> data, string collectionName, Func<T, FilterDefinition<T>>? filterBuilder) where T : IDataModel

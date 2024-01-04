@@ -80,6 +80,8 @@ public class RemoconScraperService : IHostedService, IDisposable
                     }
                 }
 
+                List<RemoconModel> models = new(plantWithFeatures.Count);
+
                 foreach ((Plant plant, RemotePlantFeatures feature) in plantWithFeatures)
                 {
                     _logger.LogInformation($"Loading data for {plant.GatewayId}...");
@@ -88,8 +90,7 @@ public class RemoconScraperService : IHostedService, IDisposable
 
                     if (plantData != null && items != null)
                     {
-                        RemoconModel model = Map(plant, plantData, items);
-                        await publisher.PublishAsync(model);
+                        models.Add(Map(plant, plantData, items));
                     }
                     else
                     {
@@ -97,7 +98,9 @@ public class RemoconScraperService : IHostedService, IDisposable
                     }
                 }
 
-                _logger.LogInformation($"Done. Waiting for next interval.");
+                await publisher.PublishAsync(models);
+
+                _logger.LogInformation("Done. Waiting for next interval.");
                 await _timer.WaitForNextTickAsync(cancellationToken);
             }
             catch (OperationCanceledException)
