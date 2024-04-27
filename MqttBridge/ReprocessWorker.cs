@@ -31,9 +31,9 @@ public class ReprocessWorker
             await _prometheusClient.DeleteSeriesData("{__name__=~\"sensor_.*\"}");
         }
 
-
         await Task.WhenAll(
             ReprocessPva(),
+            ReprocessPvaDaily(),
             ReprocessGasMeter(),
             ReprocessHeating(),
             ReprocessEnvSensor());
@@ -44,6 +44,10 @@ public class ReprocessWorker
     private async Task ReprocessPva()
     {
         await _mongoScraper.ProcessPvaDetailAsync(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
+    }
+    private async Task ReprocessPvaDaily()
+    {
+        await _mongoScraper.ProcessPvaDaily(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
     }
 
     private async Task ReprocessEnvSensor()
