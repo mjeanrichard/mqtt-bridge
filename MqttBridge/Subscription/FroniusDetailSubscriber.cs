@@ -1,16 +1,18 @@
 ﻿using Microsoft.Extensions.Logging;
+using MqttBridge.Models;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Input;
 using Silverback.Messaging.Publishing;
 
 namespace MqttBridge.Subscription;
 
-public class FroniusDailySubscriber
+public class FroniusDetailSubscriber
 {
     private readonly IPublisher _publisher;
-    private readonly ILogger<FroniusDailySubscriber> _logger;
 
-    public FroniusDailySubscriber(IPublisher publisher, ILogger<FroniusDailySubscriber> logger)
+    private readonly ILogger<FroniusDetailSubscriber> _logger;
+
+    public FroniusDetailSubscriber(IPublisher publisher, ILogger<FroniusDetailSubscriber> logger)
     {
         _publisher = publisher;
         _logger = logger;
@@ -18,8 +20,26 @@ public class FroniusDailySubscriber
 
     public async Task ProcessAsync(FroniusDailyMessage message)
     {
-        IEnumerable<FroniusArchiveData> archiveDatas = Map(message);
-        await _publisher.PublishAsync(archiveDatas.ToList());
+        IEnumerable<FroniusArchiveData> archiveDatas = Map(message).ToList();
+        await _publisher.PublishAsync(archiveDatas);
+    }
+
+    public IEnumerable<DailyEnergyModel> Map(IEnumerable<FroniusArchiveData> message)
+    {
+        foreach (FroniusArchiveData data in message)
+        {
+            DailyEnergyModel dailyEnergyModel = new()
+            {
+                Date = DateOnly.FromDateTime(data.TimestampUtc.ToSwissTime()),
+                DirectlyConsumed = data.CumulativePerDay.DirectlyConsumed,
+                Exported = data.CumulativePerDay.Exported,
+                Imported = data.CumulativePerDay.Imported,
+                OhmPilotConsumed = data.CumulativePerDay.OhmPilotConsumed,
+                Produced = data.CumulativePerDay.Produced,
+                TimestampUtc = data.TimestampUtc
+            };
+            yield return dailyEnergyModel;
+        }
     }
 
     public IEnumerable<FroniusArchiveData> Map(FroniusDailyMessage message)
@@ -33,7 +53,7 @@ public class FroniusDailySubscriber
             data.TimestampUtc = dataPoint.TimestampUtc;
             data.Seconds = dataPoint.Seconds;
 
-            data.TemperatureOhmPilot1 = dataPoint.TemperatureOhmPilot1; 
+            data.TemperatureOhmPilot1 = dataPoint.TemperatureOhmPilot1;
             data.TemperaturePowerstage = dataPoint.TemperaturePowerstage;
 
             data.Instant.DirectlyConsumed = dataPoint.DirectlyConsumed * 12;
@@ -53,6 +73,7 @@ public class FroniusDailySubscriber
                 _logger.LogWarning($"Broken Value detected: Instant '{data.Instant.DirectlyConsumed}' @ {dataPoint.Seconds}.");
                 yield break;
             }
+
             if (data.CumulativePerDay.DirectlyConsumed > 100_000_000)
             {
                 _logger.LogWarning($"Broken Value detected: CumulativePerDay '{data.CumulativePerDay.DirectlyConsumed}' Data point was '{dataPoint.DirectlyConsumed}' @ {dataPoint.Seconds}.");

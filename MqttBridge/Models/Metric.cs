@@ -4,7 +4,6 @@ namespace MqttBridge.Models;
 
 public class Metric
 {
-
     public Metric(string name)
     {
         Name = name;

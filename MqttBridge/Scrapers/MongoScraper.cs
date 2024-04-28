@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using MqttBridge.Models;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
 using MqttBridge.Models.Data.Pva;
@@ -15,12 +16,15 @@ public class MongoScraper
 
     private readonly PrometheusProcessor _prometheusProcessor;
 
+    private readonly MongoProcessor _mongoProcessor;
+
     private readonly IMongoDatabase _database;
 
-    public MongoScraper(ILogger<MongoScraper> logger, MongoClientFactory mongoClientFactory, PrometheusProcessor prometheusProcessor)
+    public MongoScraper(ILogger<MongoScraper> logger, MongoClientFactory mongoClientFactory, PrometheusProcessor prometheusProcessor, MongoProcessor mongoProcessor)
     {
         _logger = logger;
         _prometheusProcessor = prometheusProcessor;
+        _mongoProcessor = mongoProcessor;
         _database = mongoClientFactory.GetDatabase();
     }
 
@@ -31,7 +35,45 @@ public class MongoScraper
 
     public async Task ProcessPvaDaily(DateOnly? startDate, DateOnly? endDate)
     {
-        await ProcessDataModel<DailyEnergyModel>(startDate, endDate, "DailyEnergyData", data => _prometheusProcessor.ProcessAsync(data));
+        await RebuildDailyPvaDataAsync(startDate, endDate);
+        await ProcessDataModel<DailyEnergyModel>(startDate, endDate, "DailyEnergyData", data => _prometheusProcessor.ProcessAsync(data), 14);
+    }
+
+    private async Task RebuildDailyPvaDataAsync(DateOnly? startDate, DateOnly? endDate)
+    {
+        async Task Publisher(List<FroniusArchiveData> data)
+        {
+            List<DailyEnergyModel> models = new();
+            DateOnly lastDate = DateOnly.MinValue;
+            FroniusArchiveData? lastModel = null;
+            foreach (FroniusArchiveData model in data.OrderBy(m => m.TimestampUtc))
+            {
+                DateTime localTime = model.TimestampUtc.ToSwissTime();
+                DateOnly localDate = new(localTime.Year, localTime.Month, localTime.Day);
+                if (lastModel != null && localDate > lastDate)
+                {
+                    _logger.LogInformation($"Creating Daily for {lastModel.TimestampUtc} / {localDate}...");
+                    DailyEnergyModel dailyEnergyModel = new()
+                    {
+                        Date = lastDate,
+                        DirectlyConsumed = lastModel.CumulativePerDay.DirectlyConsumed,
+                        Exported = lastModel.CumulativePerDay.Exported,
+                        Imported = lastModel.CumulativePerDay.Imported,
+                        OhmPilotConsumed = lastModel.CumulativePerDay.OhmPilotConsumed,
+                        Produced = lastModel.CumulativePerDay.Produced,
+                        TimestampUtc = lastModel.TimestampUtc
+                    };
+                    models.Add(dailyEnergyModel);
+                }
+
+                lastModel = model;
+                lastDate = localDate;
+            }
+
+            await _mongoProcessor.ProcessAsync(models);
+        }
+
+        await ProcessDataModel<FroniusArchiveData>(startDate, endDate, "DetailedPowerData", Publisher, 14);
     }
 
     public async Task ProcessSensorData(DateOnly? startDate, DateOnly? endDate)
@@ -49,7 +91,7 @@ public class MongoScraper
         await ProcessDataModel<GasMeterData>(startDate, endDate, "GasMeter", data => _prometheusProcessor.ProcessAsync(data));
     }
 
-    private async Task ProcessDataModel<TEntity>(DateOnly? startDate, DateOnly? endDate, string collectionName, Func<List<TEntity>, Task> publisher) where TEntity : IDataModel
+    private async Task ProcessDataModel<TEntity>(DateOnly? startDate, DateOnly? endDate, string collectionName, Func<List<TEntity>, Task> publisher, int daysToBatch = 1) where TEntity : IDataModel
     {
         IMongoCollection<TEntity> collection = _database.GetCollection<TEntity>(collectionName);
 
@@ -60,7 +102,7 @@ public class MongoScraper
         DateTime endTime = end.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
 
         DateTime batchStartDate = start.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-        DateTime batchEndDate = batchStartDate.AddDays(1);
+        DateTime batchEndDate = batchStartDate.AddDays(daysToBatch);
         while (batchStartDate <= endTime)
         {
             _logger.LogInformation($"Processing '{collectionName}' data of {batchStartDate:dd.MM.yyyy}.");
@@ -76,7 +118,7 @@ public class MongoScraper
             }
 
             batchStartDate = batchEndDate;
-            batchEndDate = batchStartDate.AddDays(1);
+            batchEndDate = batchStartDate.AddDays(daysToBatch);
         }
     }
 

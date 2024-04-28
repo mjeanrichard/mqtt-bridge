@@ -107,7 +107,7 @@ public class Program
 
         services
             .AddSilverback()
-            .AddScopedSubscriber<FroniusDailySubscriber>()
+            .AddScopedSubscriber<FroniusDetailSubscriber>()
             .AddScopedSubscriber<EnvSensorSubscriber>()
             .AddScopedSubscriber<EnvSensorInfoSubscriber>()
             .AddScopedSubscriber<GasMeterSubscriber>()
