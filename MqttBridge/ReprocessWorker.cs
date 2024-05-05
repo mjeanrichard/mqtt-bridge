@@ -31,12 +31,11 @@ public class ReprocessWorker
             await _prometheusClient.DeleteSeriesData("{__name__=~\"sensor_.*\"}");
         }
 
-        await Task.WhenAll(
-            ReprocessPva(),
-            ReprocessPvaDaily(),
-            ReprocessGasMeter(),
-            ReprocessHeating(),
-            ReprocessEnvSensor());
+        await ReprocessPva();
+        await ReprocessPvaDaily();
+        await ReprocessGasMeter();
+        await ReprocessHeating();
+        await ReprocessEnvSensor();
         _logger.LogInformation("Reprocessing done.");
     }
 
