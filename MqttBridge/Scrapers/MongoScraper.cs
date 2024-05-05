@@ -78,7 +78,7 @@ public class MongoScraper
 
     public async Task ProcessSensorData(DateOnly? startDate, DateOnly? endDate)
     {
-        await ProcessDataModel<EnvSensorData>(startDate, endDate, "Environment", data => _prometheusProcessor.ProcessAsync(data));
+        await ProcessDataModel<EnvSensorData>(startDate, endDate, "Environment", data => _prometheusProcessor.ProcessAsync(data), 10);
     }
 
     public async Task ProcessHeating(DateOnly? startDate, DateOnly? endDate)
