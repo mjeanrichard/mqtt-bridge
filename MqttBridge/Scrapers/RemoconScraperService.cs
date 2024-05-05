@@ -43,7 +43,7 @@ public class RemoconScraperService : IHostedService, IDisposable
         _logger = logger;
         _client = client;
         _serviceProvider = serviceProvider;
-        _timer = new PeriodicTimer(TimeSpan.FromSeconds(300));
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(600));
     }
 
     private async Task UpdateData(CancellationToken cancellationToken)
@@ -101,7 +101,6 @@ public class RemoconScraperService : IHostedService, IDisposable
                 await publisher.PublishAsync(models);
 
                 _logger.LogInformation("Done. Waiting for next interval.");
-                await _timer.WaitForNextTickAsync(cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -111,6 +110,7 @@ public class RemoconScraperService : IHostedService, IDisposable
             {
                 _logger.LogError(ex, "Failed to update data.");
             }
+            await _timer.WaitForNextTickAsync(cancellationToken);
         }
     }
 
