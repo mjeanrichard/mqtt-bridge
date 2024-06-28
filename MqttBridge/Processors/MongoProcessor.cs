@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
+using MqttBridge.Models.Data.OpenMqttGateway;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Remocon;
 using MqttBridge.Models.Data.Sensor;
@@ -53,6 +54,12 @@ public class MongoProcessor
     public async Task ProcessAsync(List<RemoconModel> data)
     {
         await UploadAsync(data, "Heating", null);
+    }
+
+    public async Task ProcessAsync(List<PlantSenseData> data)
+    {
+        FilterDefinition<PlantSenseData> Filter(PlantSenseData dataPoint) => Builders<PlantSenseData>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Name == dataPoint.Name && x.DeviceId == dataPoint.DeviceId);
+        await UploadAsync(data, "OpenMqttGateway", Filter);
     }
 
     private async Task UploadAsync<T>(IEnumerable<T> data, string collectionName, Func<T, FilterDefinition<T>>? filterBuilder) where T : IDataModel

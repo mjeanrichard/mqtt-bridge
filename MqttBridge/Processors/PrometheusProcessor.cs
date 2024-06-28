@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MqttBridge.Models;
 using MqttBridge.Models.Data.GasMeter;
+using MqttBridge.Models.Data.OpenMqttGateway;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Remocon;
 using MqttBridge.Models.Data.Sensor;
@@ -54,6 +55,12 @@ public class PrometheusProcessor
     public async Task ProcessAsync(List<RemoconModel> data)
     {
         _logger.LogInformation($"Writing '{nameof(RemoconModel)}' data to Prometheus.");
+        await SendToPrometheus(ConvertToPrometheus(data));
+    }
+
+    public async Task ProcessAsync(List<PlantSenseData> data)
+    {
+        _logger.LogInformation($"Writing '{nameof(PlantSenseData)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(data));
     }
 
@@ -180,6 +187,32 @@ public class PrometheusProcessor
             metric.SetTag("type", data.Type.ToString("G"));
             metric.SetTag("name", data.Name);
             yield return metric.ToPrometheus();
+        }
+    }
+
+    private IEnumerable<string> ConvertToPrometheus(IEnumerable<PlantSenseData> dataPoints)
+    {
+        foreach (PlantSenseData data in dataPoints)
+        {
+            DateTimeOffset dto = data.TimestampUtc;
+            long ts = dto.ToUnixTimeMilliseconds();
+
+            Metric CreateMetric(string name, double value) => new Metric(name)
+                {
+                    Timestamp = ts,
+                    Value = value
+                }
+                .SetTag("device", data.Name)
+                .SetTag("model", data.Model)
+                .SetTag("test", data.Test.ToString(CultureInfo.InvariantCulture).ToLowerInvariant())
+                .SetTag("device_id", data.DeviceId);
+
+            yield return CreateMetric("sensor_temperature_celsius", data.Temperature).ToPrometheus();
+            yield return CreateMetric("sensor_humidity_percent", data.Humidity).ToPrometheus();
+            yield return CreateMetric("sensor_moisture_percent", data.Moisture).ToPrometheus();
+            yield return CreateMetric("sensor_battery_volts", data.Battery).ToPrometheus();
+            yield return CreateMetric("sensor_rssi_db", data.Rssi).ToPrometheus();
+            yield return CreateMetric("sensor_snr_ratio", data.Snr).ToPrometheus();
         }
     }
 }

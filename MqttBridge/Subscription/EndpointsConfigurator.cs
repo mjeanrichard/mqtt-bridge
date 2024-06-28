@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
 using MqttBridge.Models.Input;
-using MQTTnet.Client;
 using Silverback.Messaging.Configuration;
 using Silverback.Messaging.Serialization;
 
@@ -40,13 +39,15 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                     .Configure(
                         config =>
                         {
-                            config
-                                .ConnectViaTcp(client =>
-                                {
-                                    client.Server = _mqttSettings.Host;
-                                    client.Port = _mqttSettings.Port;
-                                    client.TlsOptions = new MqttClientTlsOptions() { UseTls = _mqttSettings.UseTls, CertificateValidationHandler = args => true };
-                                });
+                            config.ConnectViaTcp(_mqttSettings.Host, _mqttSettings.Port);
+                            if (_mqttSettings.UseTls)
+                            {
+                                config.EnableTls(tlsOptionBuilder => tlsOptionBuilder.WithAllowUntrustedCertificates());
+                            }
+                            else
+                            {
+                                config.DisableTls();
+                            }
 
                             if (!string.IsNullOrWhiteSpace(_mqttSettings.Username))
                             {
@@ -54,12 +55,11 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                             }
                         }
                     )
-
-                    // Consume the samples/basic topic
                     .AddMqttInbound<FroniusDailyMessage>("devices/philoweg/pva/daily", "MB_FroniusArchive" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<FroniusDailyMessage>())
                     .AddMqttInbound<EnvSensorInfoMessage>("devices/philoweg/+/info", "MB_EnvSensorInfo" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorInfoMessage>())
                     .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorMeasurement>())
                     .AddMqttInbound<GasMeterMessage>("devices/philoweg/gas/+", "MB_GasMeter" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<GasMeterMessage>())
+                    .AddMqttInbound<MqttGatewayMessage>("devices/omgOpenMQTTGateway/LORAtoMQTT/+", "MB_MqttGateway" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<MqttGatewayMessage>())
             );
     }
 }
