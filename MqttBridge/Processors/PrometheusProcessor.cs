@@ -210,7 +210,9 @@ public class PrometheusProcessor
             yield return CreateMetric("sensor_temperature_celsius", data.Temperature).ToPrometheus();
             yield return CreateMetric("sensor_humidity_percent", data.Humidity).ToPrometheus();
             yield return CreateMetric("sensor_moisture_percent", data.Moisture).ToPrometheus();
+            yield return CreateMetric("sensor_moisture_raw", data.MoistureRaw).ToPrometheus();
             yield return CreateMetric("sensor_battery_volts", data.Battery).ToPrometheus();
+            yield return CreateMetric("sensor_battery_percent", data.BatteryPercent).ToPrometheus();
             yield return CreateMetric("sensor_rssi_db", data.Rssi).ToPrometheus();
             yield return CreateMetric("sensor_snr_ratio", data.Snr).ToPrometheus();
         }

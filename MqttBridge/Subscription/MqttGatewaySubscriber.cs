@@ -56,6 +56,11 @@ public class MqttGatewaySubscriber
             data.Battery = bat;
         }
 
+        if (message.Measurements.TryGetValue("batPct", out JsonElement batPctElement) && batPctElement.TryGetInt32(out int batPct))
+        {
+            data.BatteryPercent = batPct;
+        }
+
         if (message.Measurements.TryGetValue("hum", out JsonElement humElement) && humElement.TryGetInt32(out int humidity))
         {
             data.Humidity = humidity;
@@ -64,6 +69,11 @@ public class MqttGatewaySubscriber
         if (message.Measurements.TryGetValue("moi", out JsonElement moiElement) && moiElement.TryGetInt32(out int moisture))
         {
             data.Moisture = moisture;
+        }
+
+        if (message.Measurements.TryGetValue("moiRaw", out JsonElement moiRawElement) && moiRawElement.TryGetInt32(out int moistureRaw))
+        {
+            data.MoistureRaw = moistureRaw;
         }
 
         if (message.Measurements.TryGetValue("test", out JsonElement testElement) && testElement.ValueKind == JsonValueKind.True)
