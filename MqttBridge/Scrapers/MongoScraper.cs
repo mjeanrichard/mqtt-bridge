@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Linq.Expressions;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MqttBridge.Models;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
+using MqttBridge.Models.Data.OpenMqttGateway;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Remocon;
 using MqttBridge.Models.Data.Sensor;
@@ -86,12 +88,18 @@ public class MongoScraper
         await ProcessDataModel<RemoconModel>(startDate, endDate, "Heating", data => _prometheusProcessor.ProcessAsync(data));
     }
 
+    public async Task ProcessOpenMqttGateway(DateOnly? startDate, DateOnly? endDate)
+    {
+        await ProcessDataModel<PlantSenseData>(startDate, endDate, "OpenMqttGateway", data => _prometheusProcessor.ProcessAsync(data), filter: data => data.Model == "PlantSense");
+    }
+
     public async Task ProcessGasMeter(DateOnly? startDate, DateOnly? endDate)
     {
         await ProcessDataModel<GasMeterData>(startDate, endDate, "GasMeter", data => _prometheusProcessor.ProcessAsync(data));
     }
 
-    private async Task ProcessDataModel<TEntity>(DateOnly? startDate, DateOnly? endDate, string collectionName, Func<List<TEntity>, Task> publisher, int daysToBatch = 1) where TEntity : IDataModel
+
+    private async Task ProcessDataModel<TEntity>(DateOnly? startDate, DateOnly? endDate, string collectionName, Func<List<TEntity>, Task> publisher, int daysToBatch = 1, Expression<Func<TEntity, bool>>? filter = null) where TEntity : IDataModel
     {
         IMongoCollection<TEntity> collection = _database.GetCollection<TEntity>(collectionName);
 
@@ -107,9 +115,13 @@ public class MongoScraper
         {
             _logger.LogInformation($"Processing '{collectionName}' data of {batchStartDate:dd.MM.yyyy}.");
 
-            FilterDefinition<TEntity> filter = Builders<TEntity>.Filter.Where(d => d.TimestampUtc >= batchStartDate && d.TimestampUtc < batchEndDate);
+            FilterDefinition<TEntity> filterDefinition = Builders<TEntity>.Filter.Where(d => d.TimestampUtc >= batchStartDate && d.TimestampUtc < batchEndDate);
+            if (filter != null)
+            {
+                filterDefinition = Builders<TEntity>.Filter.And(filterDefinition, Builders<TEntity>.Filter.Where(filter));
+            }
 
-            IAsyncCursor<TEntity> dataCursor = await collection.FindAsync(filter);
+            IAsyncCursor<TEntity> dataCursor = await collection.FindAsync(filterDefinition);
             List<TEntity> data = await dataCursor.ToListAsync();
 
             if (data.Any())

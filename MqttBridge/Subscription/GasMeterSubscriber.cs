@@ -20,8 +20,16 @@ public class GasMeterSubscriber
     public async Task ProcessAsync(GasMeterMessage message)
     {
         _logger.LogDebug("Received Gas Meter message.");
-        List<GasMeterData> data = new() { Map(message) };
-        await _publisher.PublishAsync(data);
+        GasMeterData gasMeterData = Map(message);
+        if (gasMeterData.Volume > 0)
+        {
+            List<GasMeterData> data = new() { gasMeterData };
+            await _publisher.PublishAsync(data);
+        }
+        else
+        {
+            _logger.LogWarning("Ignoring empty Gas Meter message.");
+        }
     }
 
     private GasMeterData Map(GasMeterMessage message)

@@ -36,6 +36,7 @@ public class ReprocessWorker
         await ReprocessPvaDaily();
         await ReprocessGasMeter();
         await ReprocessHeating();
+        await ReprocessOpenMqttGateway();
         _logger.LogInformation("Reprocessing done.");
     }
 
@@ -62,5 +63,10 @@ public class ReprocessWorker
     private async Task ReprocessHeating()
     {
         await _mongoScraper.ProcessHeating(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
+    }
+
+    private async Task ReprocessOpenMqttGateway()
+    {
+        await _mongoScraper.ProcessOpenMqttGateway(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
     }
 }
