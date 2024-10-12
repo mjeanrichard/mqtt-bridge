@@ -93,21 +93,66 @@ public class PrometheusProcessor
         {
             DateTimeOffset dto = data.TimestampUtc;
             long ts = dto.ToUnixTimeMilliseconds();
-            yield return new Metric("pva_energy_imported_joules") { Timestamp = ts, Value = data.CumulativePerDay.Imported * 3600 }.ToPrometheus();
-            yield return new Metric("pva_power_importing_watts") { Timestamp = ts, Value = data.Instant.Imported }.ToPrometheus();
-            yield return new Metric("pva_energy_exported_joules") { Timestamp = ts, Value = data.CumulativePerDay.Exported * 3600 }.ToPrometheus();
-            yield return new Metric("pva_power_exporting_watts") { Timestamp = ts, Value = data.Instant.Exported }.ToPrometheus();
-            yield return new Metric("pva_energy_produced_joules") { Timestamp = ts, Value = data.CumulativePerDay.Produced * 3600 }.ToPrometheus();
-            yield return new Metric("pva_power_producing_watts") { Timestamp = ts, Value = data.Instant.Produced }.ToPrometheus();
 
-            yield return new Metric("pva_energy_directly_consumed_joules") { Timestamp = ts, Value = data.CumulativePerDay.OhmPilotConsumed * 3600 }.SetTag("consumer", "OhmPilot").ToPrometheus();
-            yield return new Metric("pva_power_directly_consuming_watts") { Timestamp = ts, Value = data.Instant.OhmPilotConsumed }.SetTag("consumer", "OhmPilot").ToPrometheus();
+            if (data.CumulativePerDay.Imported.HasValue)
+            {
+                yield return new Metric("pva_energy_imported_joules") { Timestamp = ts, Value = data.CumulativePerDay.Imported.Value * 3600 }.ToPrometheus();
+            }
 
-            yield return new Metric("pva_energy_directly_consumed_joules") { Timestamp = ts, Value = data.CumulativePerDay.DirectlyConsumed * 3600 }.SetTag("consumer", "Haus").ToPrometheus();
-            yield return new Metric("pva_power_directly_consuming_watts") { Timestamp = ts, Value = data.Instant.DirectlyConsumed }.SetTag("consumer", "Haus").ToPrometheus();
+            if (data.Instant.Imported.HasValue)
+            {
+                yield return new Metric("pva_power_importing_watts") { Timestamp = ts, Value = data.Instant.Imported.Value }.ToPrometheus();
+            }
 
-            yield return new Metric("pva_temperature_celsius") { Timestamp = ts, Value = data.TemperaturePowerstage }.SetTag("device", "Powerstage").ToPrometheus();
-            yield return new Metric("pva_temperature_celsius") { Timestamp = ts, Value = data.TemperatureOhmPilot1 }.SetTag("device", "OhmPilot1").ToPrometheus();
+            if (data.CumulativePerDay.Exported.HasValue)
+            {
+                yield return new Metric("pva_energy_exported_joules") { Timestamp = ts, Value = data.CumulativePerDay.Exported.Value * 3600 }.ToPrometheus();
+            }
+
+            if (data.Instant.Exported.HasValue)
+            {
+                yield return new Metric("pva_power_exporting_watts") { Timestamp = ts, Value = data.Instant.Exported.Value }.ToPrometheus();
+            }
+
+            if (data.CumulativePerDay.Produced.HasValue)
+            {
+                yield return new Metric("pva_energy_produced_joules") { Timestamp = ts, Value = data.CumulativePerDay.Produced.Value * 3600 }.ToPrometheus();
+            }
+
+            if (data.Instant.Produced.HasValue)
+            {
+                yield return new Metric("pva_power_producing_watts") { Timestamp = ts, Value = data.Instant.Produced.Value }.ToPrometheus();
+            }
+
+            if (data.CumulativePerDay.OhmPilotConsumed.HasValue)
+            {
+                yield return new Metric("pva_energy_directly_consumed_joules") { Timestamp = ts, Value = data.CumulativePerDay.OhmPilotConsumed.Value * 3600 }.SetTag("consumer", "OhmPilot").ToPrometheus();
+            }
+
+            if (data.Instant.OhmPilotConsumed.HasValue)
+            {
+                yield return new Metric("pva_power_directly_consuming_watts") { Timestamp = ts, Value = data.Instant.OhmPilotConsumed.Value }.SetTag("consumer", "OhmPilot").ToPrometheus();
+            }
+
+            if (data.CumulativePerDay.DirectlyConsumed.HasValue)
+            {
+                yield return new Metric("pva_energy_directly_consumed_joules") { Timestamp = ts, Value = data.CumulativePerDay.DirectlyConsumed.Value * 3600 }.SetTag("consumer", "Haus").ToPrometheus();
+            }
+
+            if (data.Instant.DirectlyConsumed.HasValue)
+            {
+                yield return new Metric("pva_power_directly_consuming_watts") { Timestamp = ts, Value = data.Instant.DirectlyConsumed.Value }.SetTag("consumer", "Haus").ToPrometheus();
+            }
+
+            if (data.TemperaturePowerstage.HasValue)
+            {
+                yield return new Metric("pva_temperature_celsius") { Timestamp = ts, Value = data.TemperaturePowerstage.Value }.SetTag("device", "Powerstage").ToPrometheus();
+            }
+
+            if (data.TemperatureOhmPilot1.HasValue)
+            {
+                yield return new Metric("pva_temperature_celsius") { Timestamp = ts, Value = data.TemperatureOhmPilot1.Value }.SetTag("device", "OhmPilot1").ToPrometheus();
+            }
         }
     }
 
@@ -121,11 +166,11 @@ public class PrometheusProcessor
 
             DateTimeOffset midday = new(data.Date.Year, data.Date.Month, data.Date.Day, 12, 0, 0, utcOffset);
             long ts = midday.ToUnixTimeMilliseconds();
-            yield return new Metric("pva_energy_day_imported_joules") { Timestamp = ts, Value = data.Imported * 3600 }.ToPrometheus();
-            yield return new Metric("pva_energy_day_exported_joules") { Timestamp = ts, Value = data.Exported * 3600 }.ToPrometheus();
-            yield return new Metric("pva_energy_day_produced_joules") { Timestamp = ts, Value = data.Produced * 3600 }.ToPrometheus();
-            yield return new Metric("pva_energy_day_directly_consumed_joules") { Timestamp = ts, Value = data.OhmPilotConsumed * 3600 }.SetTag("consumer", "OhmPilot").ToPrometheus();
-            yield return new Metric("pva_energy_day_directly_consumed_joules") { Timestamp = ts, Value = data.DirectlyConsumed * 3600 }.SetTag("consumer", "Haus").ToPrometheus();
+            yield return new Metric("pva_energy_day_imported_joules") { Timestamp = ts, Value = data.Imported.GetValueOrDefault(0) * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_day_exported_joules") { Timestamp = ts, Value = data.Exported.GetValueOrDefault(0) * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_day_produced_joules") { Timestamp = ts, Value = data.Produced.GetValueOrDefault(0) * 3600 }.ToPrometheus();
+            yield return new Metric("pva_energy_day_directly_consumed_joules") { Timestamp = ts, Value = data.OhmPilotConsumed.GetValueOrDefault(0) * 3600 }.SetTag("consumer", "OhmPilot").ToPrometheus();
+            yield return new Metric("pva_energy_day_directly_consumed_joules") { Timestamp = ts, Value = data.DirectlyConsumed.GetValueOrDefault(0) * 3600 }.SetTag("consumer", "Haus").ToPrometheus();
         }
     }
 

@@ -2,9 +2,9 @@
 
 public abstract class OpenMqttGatewayData : IDataModel
 {
-    public string DeviceId { get; set; }
+    public string DeviceId { get; set; } = string.Empty;
 
-    public string Model { get; set; }
+    public string Model { get; set; } = string.Empty;
 
 
     public int Rssi { get; set; }

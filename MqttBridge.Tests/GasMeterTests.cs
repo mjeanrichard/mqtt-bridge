@@ -49,7 +49,7 @@ public class GasMeterTests
         (object? message, Type messageType) = await jsonMessageSerializer.DeserializeAsync(stream, new MessageHeaderCollection(), MessageSerializationContext.Empty);
 
         message.Should().BeOfType<GasMeterMessage>();
-        ((GasMeterMessage)message!).BatteryMilivolts.Should().Be(2363);
+        ((GasMeterMessage)message!).BatteryMillivolts.Should().Be(2363);
         ((GasMeterMessage)message).Values[0].ScaledValue.Should().Be(21072718);
     }
 

@@ -20,11 +20,11 @@ namespace MqttBridge.Models.Data.Remocon
 
         public double HeatingCircuitPressure { get; set; }
 
-        public string PlantName { get; set; }
+        public string PlantName { get; set; } = string.Empty;
 
-        public string GatewayFirmwareVersion { get; set; }
+        public string GatewayFirmwareVersion { get; set; } = string.Empty;
 
-        public string GatewayId { get; set; }
+        public string GatewayId { get; set; } = string.Empty;
 
         public int MqttApiVersion { get; set; }
     }

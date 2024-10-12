@@ -3,9 +3,9 @@
 public class EnvSensorInfoMessage
 {
     public long Timestamp { get; set; }
-    public string Name { get; set; }
-    public string Mac { get; set; }
-    public string Ip { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Mac { get; set; } = string.Empty;
+    public string Ip { get; set; } = string.Empty;
     public int Rssi { get; set; }
     public int FwVersion { get; set; }
     public int SdState { get; set; }

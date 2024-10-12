@@ -2,9 +2,9 @@
 
 public class EnvSensorInfo : IDataModel
 {
-    public string Device { get; set; }
-    public string Mac { get; set; }
-    public string Ip { get; set; }
+    public string Device { get; set; } = string.Empty;
+    public string Mac { get; set; } = string.Empty;
+    public string Ip { get; set; } = string.Empty;
     public int Rssi { get; set; }
     public int FwVersion { get; set; }
     public bool SdState { get; set; }

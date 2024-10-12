@@ -4,7 +4,7 @@ public class GasMeterData : IDataModel
 {
     public int Address { get; set; }
 
-    public string DeviceId { get; set; }
+    public string DeviceId { get; set; } = string.Empty;
 
     public int Manufacturer { get; set; }
 
@@ -14,9 +14,9 @@ public class GasMeterData : IDataModel
 
     public int AccessNumber { get; set; }
 
-    public string Status { get; set; }
+    public string Status { get; set; } = string.Empty;
 
-    public string Signature { get; set; }
+    public string Signature { get; set; } = string.Empty;
 
     public long Milliseconds { get; set; }
 

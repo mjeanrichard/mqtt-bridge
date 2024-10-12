@@ -6,10 +6,10 @@ namespace MqttBridge.Models.Input;
 public class MqttGatewayMessage
 {
     [JsonPropertyName("id")]
-    public string Id { get; set; }
+    public string Id { get; set; } = string.Empty;
 
     [JsonPropertyName("model")]
-    public string Model { get; set; }
+    public string Model { get; set; } = string.Empty;
 
     [JsonPropertyName("rssi")]
     public int Rssi { get; set; }
@@ -24,5 +24,5 @@ public class MqttGatewayMessage
     public int PacketSize { get; set; }
 
     [JsonExtensionData]
-    public Dictionary<string, JsonElement> Measurements { get; set; }
+    public Dictionary<string, JsonElement> Measurements { get; set; } = new();
 }

@@ -38,7 +38,7 @@ public class GasMeterSubscriber
         data.DeviceId = message.Id;
         data.AccessNumber = message.AccessNumber;
         data.Address = message.Address;
-        data.Battery = message.BatteryMilivolts / 1000d;
+        data.Battery = message.BatteryMillivolts / 1000d;
         data.Manufacturer = message.Manufacturer;
         data.Medium = message.Medium;
         data.Milliseconds = message.Milliseconds;

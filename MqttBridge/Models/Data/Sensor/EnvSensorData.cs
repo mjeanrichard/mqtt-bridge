@@ -1,14 +1,19 @@
-﻿namespace MqttBridge.Models.Data.Sensor;
-
-public class EnvSensorData : IDataModel
+﻿namespace MqttBridge.Models.Data.Sensor
 {
-    public string Name { get; set; }
-    public string Device { get; set; }
-    public DateTime TimestampUtc { get; set; }
+    public class EnvSensorData : IDataModel
+    {
+        public string Name { get; set; } = string.Empty;
 
-    public double Value { get; set; }
+        public string Device { get; set; } = string.Empty;
 
-    public Units Unit { get; set; }
-    public MeasurementType Type { get; set; }
-    public bool IsTestDevice { get; set; }
+        public DateTime TimestampUtc { get; set; }
+
+        public double Value { get; set; }
+
+        public Units Unit { get; set; }
+
+        public MeasurementType Type { get; set; }
+
+        public bool IsTestDevice { get; set; }
+    }
 }

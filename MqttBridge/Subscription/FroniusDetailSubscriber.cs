@@ -8,6 +8,16 @@ namespace MqttBridge.Subscription;
 
 public class FroniusDetailSubscriber
 {
+    private static double? ToWattHours(double? watts)
+    {
+        if (watts == null)
+        {
+            return null;
+        }
+
+        return watts.Value * 12;
+    }
+
     private readonly IPublisher _publisher;
 
     private readonly ILogger<FroniusDetailSubscriber> _logger;
@@ -56,17 +66,17 @@ public class FroniusDetailSubscriber
             data.TemperatureOhmPilot1 = dataPoint.TemperatureOhmPilot1;
             data.TemperaturePowerstage = dataPoint.TemperaturePowerstage;
 
-            data.Instant.DirectlyConsumed = dataPoint.DirectlyConsumed * 12;
-            data.Instant.Imported = dataPoint.Imported * 12;
-            data.Instant.Exported = dataPoint.Exported * 12;
-            data.Instant.OhmPilotConsumed = dataPoint.OhmPilotConsumed * 12;
-            data.Instant.Produced = dataPoint.Produced * 12;
+            data.Instant.DirectlyConsumed = ToWattHours(dataPoint.DirectlyConsumed);
+            data.Instant.Imported = ToWattHours(dataPoint.Imported);
+            data.Instant.Exported = ToWattHours(dataPoint.Exported);
+            data.Instant.OhmPilotConsumed = ToWattHours(dataPoint.OhmPilotConsumed);
+            data.Instant.Produced = ToWattHours(dataPoint.Produced);
 
-            data.CumulativePerDay.DirectlyConsumed = dataPoint.DirectlyConsumed + previousPowerData.DirectlyConsumed;
-            data.CumulativePerDay.Imported = dataPoint.Imported + previousPowerData.Imported;
-            data.CumulativePerDay.Exported = dataPoint.Exported + previousPowerData.Exported;
-            data.CumulativePerDay.OhmPilotConsumed = dataPoint.OhmPilotConsumed + previousPowerData.OhmPilotConsumed;
-            data.CumulativePerDay.Produced = dataPoint.Produced + previousPowerData.Produced;
+            data.CumulativePerDay.DirectlyConsumed = dataPoint.DirectlyConsumed.GetValueOrDefault(0) + previousPowerData.DirectlyConsumed.GetValueOrDefault(0);
+            data.CumulativePerDay.Imported = dataPoint.Imported.GetValueOrDefault(0) + previousPowerData.Imported.GetValueOrDefault(0);
+            data.CumulativePerDay.Exported = dataPoint.Exported.GetValueOrDefault(0) + previousPowerData.Exported.GetValueOrDefault(0);
+            data.CumulativePerDay.OhmPilotConsumed = dataPoint.OhmPilotConsumed.GetValueOrDefault(0) + previousPowerData.OhmPilotConsumed.GetValueOrDefault(0);
+            data.CumulativePerDay.Produced = dataPoint.Produced.GetValueOrDefault(0) + previousPowerData.Produced.GetValueOrDefault(0);
 
             if (data.Instant.DirectlyConsumed > 10_000)
             {

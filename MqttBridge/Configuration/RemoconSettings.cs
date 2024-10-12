@@ -6,7 +6,7 @@ public class RemoconSettings
 
     public string BaseUrl { get; set; } = "https://www.remocon-net.remotethermo.com/api/v2/";
 
-    public string User { get; set; }
+    public string User { get; set; } = string.Empty;
 
-    public string Password { get; set; }
+    public string Password { get; set; } = string.Empty;
 }

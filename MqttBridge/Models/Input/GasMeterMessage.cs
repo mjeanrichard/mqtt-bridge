@@ -8,7 +8,7 @@ public class GasMeterMessage
     public int Address { get; set; }
 
     [JsonPropertyName("id")]
-    public string Id { get; set; }
+    public string Id { get; set; } = string.Empty;
 
     [JsonPropertyName("manufacturer")]
     public int Manufacturer { get; set; }
@@ -23,20 +23,20 @@ public class GasMeterMessage
     public int AccessNumber { get; set; }
 
     [JsonPropertyName("status")]
-    public string Status { get; set; }
+    public string Status { get; set; } = string.Empty;
 
     [JsonPropertyName("signature")]
-    public string Signature { get; set; }
+    public string Signature { get; set; } = string.Empty;
 
     [JsonPropertyName("millis")]
     public long Milliseconds { get; set; }
 
     [JsonPropertyName("battery_mv")]
-    public int BatteryMilivolts { get; set; }
+    public int BatteryMillivolts { get; set; }
 
     [JsonPropertyName("vol_m3")]
     public double Volume { get; set; }
 
     [JsonPropertyName("values")]
-    public GasMeterValue[] Values { get; set; }
+    public GasMeterValue[] Values { get; set; } = [];
 }
