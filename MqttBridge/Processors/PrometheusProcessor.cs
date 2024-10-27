@@ -64,6 +64,12 @@ public class PrometheusProcessor
         await SendToPrometheus(ConvertToPrometheus(data));
     }
 
+    public async Task ProcessAsync(List<PlantSenseWifi> data)
+    {
+        _logger.LogInformation($"Writing '{nameof(PlantSenseWifi)}' data to Prometheus.");
+        await SendToPrometheus(ConvertToPrometheus(data));
+    }
+
     private async Task SendToPrometheus(IEnumerable<string> lines)
     {
         PushStreamContent content = new(async stream =>
@@ -249,6 +255,7 @@ public class PrometheusProcessor
                 }
                 .SetTag("device", data.Name)
                 .SetTag("model", data.Model)
+                .SetTag("msg", data.Message ?? "data")
                 .SetTag("test", data.Test.ToString(CultureInfo.InvariantCulture).ToLowerInvariant())
                 .SetTag("device_id", data.DeviceId);
 
@@ -258,8 +265,33 @@ public class PrometheusProcessor
             yield return CreateMetric("sensor_moisture_raw", data.MoistureRaw).ToPrometheus();
             yield return CreateMetric("sensor_battery_volts", data.Battery).ToPrometheus();
             yield return CreateMetric("sensor_battery_percent", data.BatteryPercent).ToPrometheus();
-            yield return CreateMetric("sensor_rssi_db", data.Rssi).ToPrometheus();
-            yield return CreateMetric("sensor_snr_ratio", data.Snr).ToPrometheus();
+            yield return CreateMetric("sensor_rssi_db", data.Rssi).SetTag("radio", "lora").ToPrometheus();
+            yield return CreateMetric("sensor_snr_ratio", data.Snr).SetTag("radio", "lora").ToPrometheus();
+        }
+    }
+    
+    private IEnumerable<string> ConvertToPrometheus(IEnumerable<PlantSenseWifi> dataPoints)
+    {
+        foreach (PlantSenseWifi data in dataPoints)
+        {
+            DateTimeOffset dto = data.TimestampUtc;
+            long ts = dto.ToUnixTimeMilliseconds();
+
+            Metric CreateMetric(string name, double value) => new Metric(name)
+                {
+                    Timestamp = ts,
+                    Value = value
+                }
+                .SetTag("device", data.Name)
+                .SetTag("model", data.Model)
+                .SetTag("msg", data.Message ?? "wifi")
+                .SetTag("test", data.Test.ToString(CultureInfo.InvariantCulture).ToLowerInvariant())
+                .SetTag("device_id", data.DeviceId);
+
+            yield return CreateMetric("sensor_connect_seconds", data.ConnectTime).ToPrometheus();
+            yield return CreateMetric("sensor_rssi_db", data.Rssi).SetTag("radio", "lora").ToPrometheus();
+            yield return CreateMetric("sensor_snr_ratio", data.Snr).SetTag("radio", "lora").ToPrometheus();
+            yield return CreateMetric("sensor_rssi_db", data.WifiRssi).SetTag("radio", "wifi").ToPrometheus();
         }
     }
 }

@@ -90,7 +90,8 @@ public class MongoScraper
 
     public async Task ProcessOpenMqttGateway(DateOnly? startDate, DateOnly? endDate)
     {
-        await ProcessDataModel<PlantSenseData>(startDate, endDate, "OpenMqttGateway", data => _prometheusProcessor.ProcessAsync(data), filter: data => data.Model == "PlantSense");
+        await ProcessDataModel<PlantSenseData>(startDate, endDate, "OpenMqttGateway", data => _prometheusProcessor.ProcessAsync(data), filter: data => data.Model == "PlantSense" && (data.Message == null || data.Message == "data"));
+        await ProcessDataModel<PlantSenseWifi>(startDate, endDate, "OpenMqttGateway", data => _prometheusProcessor.ProcessAsync(data), filter: data => data.Model == "PlantSense" && data.Message == "wifi");
     }
 
     public async Task ProcessGasMeter(DateOnly? startDate, DateOnly? endDate)

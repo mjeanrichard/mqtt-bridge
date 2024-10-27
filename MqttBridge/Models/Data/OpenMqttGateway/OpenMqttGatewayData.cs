@@ -6,6 +6,7 @@ public abstract class OpenMqttGatewayData : IDataModel
 
     public string Model { get; set; } = string.Empty;
 
+    public string? Message { get; set; }
 
     public int Rssi { get; set; }
 

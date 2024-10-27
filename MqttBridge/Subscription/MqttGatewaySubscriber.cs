@@ -36,7 +36,49 @@ public class MqttGatewaySubscriber
         }
     }
 
-    private async Task PublishPlantSense(MqttGatewayMessage message)
+    private Task PublishPlantSense(MqttGatewayMessage message)
+    {
+        switch (message.Message)
+        {
+            case "wifi":
+                return PublishPlantSenseWifi(message);
+
+            default:
+            case "data":
+                return PublishPlantSenseData(message);
+        }
+    }
+
+    private async Task PublishPlantSenseWifi(MqttGatewayMessage message)
+    {
+        PlantSenseWifi data = new();
+        MapOpenMqttGatewayProperties(message, data);
+
+        if (message.Measurements.TryGetValue("name", out JsonElement nameElement))
+        {
+            data.Name = nameElement.GetString() ?? string.Empty;
+        }
+
+        if (message.Measurements.TryGetValue("test", out JsonElement testElement) && testElement.ValueKind == JsonValueKind.True)
+        {
+            data.Test = true;
+        }
+
+        if (message.Measurements.TryGetValue("wifiRssi", out JsonElement rssiElement) && rssiElement.TryGetInt32(out int rssi))
+        {
+            data.WifiRssi = rssi;
+        }
+
+        if (message.Measurements.TryGetValue("uptime", out JsonElement uptimeElement) && uptimeElement.TryGetInt32(out int uptime))
+        {
+            data.ConnectTime = uptime;
+        }
+
+        await _publisher.PublishAsync(new List<PlantSenseWifi>() { data });
+    }
+
+
+    private async Task PublishPlantSenseData(MqttGatewayMessage message)
     {
         PlantSenseData data = new();
         MapOpenMqttGatewayProperties(message, data);
@@ -81,6 +123,11 @@ public class MqttGatewaySubscriber
             data.Test = true;
         }
 
+        if (message.Measurements.TryGetValue("idx", out JsonElement idxElement) && moiRawElement.TryGetInt32(out int index))
+        {
+            data.Index = index;
+        }
+
         await _publisher.PublishAsync(new List<PlantSenseData>() { data });
     }
 
@@ -92,6 +139,7 @@ public class MqttGatewaySubscriber
         data.PfError = message.PfError;
         data.Rssi = message.Rssi;
         data.Snr = message.Snr;
+        data.Message = message.Message ?? "data";
         data.TimestampUtc = DateTime.UtcNow;
     }
 }

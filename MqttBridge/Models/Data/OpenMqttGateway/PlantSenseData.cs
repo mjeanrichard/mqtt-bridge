@@ -17,4 +17,17 @@ public class PlantSenseData : OpenMqttGatewayData
     public double Humidity { get; set; }
 
     public bool Test { get; set; }
+
+    public int Index { get; set; }
+}
+
+public class PlantSenseWifi : OpenMqttGatewayData
+{
+    public string Name { get; set; } = string.Empty;
+
+    public bool Test { get; set; }
+
+    public int WifiRssi { get; set; }
+
+    public int ConnectTime { get; set; }
 }

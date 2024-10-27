@@ -11,6 +11,9 @@ public class MqttGatewayMessage
     [JsonPropertyName("model")]
     public string Model { get; set; } = string.Empty;
 
+    [JsonPropertyName("msg")]
+    public string? Message { get; set; }
+
     [JsonPropertyName("rssi")]
     public int Rssi { get; set; }
 
