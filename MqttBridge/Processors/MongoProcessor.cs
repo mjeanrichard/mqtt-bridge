@@ -58,7 +58,13 @@ public class MongoProcessor
 
     public async Task ProcessAsync(List<PlantSenseData> data)
     {
-        FilterDefinition<PlantSenseData> Filter(PlantSenseData dataPoint) => Builders<PlantSenseData>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Name == dataPoint.Name && x.DeviceId == dataPoint.DeviceId);
+        FilterDefinition<PlantSenseData> Filter(PlantSenseData dataPoint) => Builders<PlantSenseData>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Name == dataPoint.Name && x.Message == dataPoint.Message && x.DeviceId == dataPoint.DeviceId);
+        await UploadAsync(data, "OpenMqttGateway", Filter);
+    }
+
+    public async Task ProcessAsync(List<PlantSenseWifi> data)
+    {
+        FilterDefinition<PlantSenseWifi> Filter(PlantSenseWifi dataPoint) => Builders<PlantSenseWifi>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Name == dataPoint.Name && x.Message == dataPoint.Message && x.DeviceId == dataPoint.DeviceId);
         await UploadAsync(data, "OpenMqttGateway", Filter);
     }
 
