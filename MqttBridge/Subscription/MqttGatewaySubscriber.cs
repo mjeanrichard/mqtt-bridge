@@ -123,7 +123,7 @@ public class MqttGatewaySubscriber
             data.Test = true;
         }
 
-        if (message.Measurements.TryGetValue("idx", out JsonElement idxElement) && moiRawElement.TryGetInt32(out int index))
+        if (message.Measurements.TryGetValue("idx", out JsonElement idxElement) && idxElement.TryGetInt32(out int index))
         {
             data.Index = index;
         }
