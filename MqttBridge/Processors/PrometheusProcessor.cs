@@ -225,7 +225,10 @@ public class PrometheusProcessor
 
             yield return CreateMetric("sensor_connect_time_seconds", info.ConnectTime).ToPrometheus();
             yield return CreateMetric("sensor_firmware_version", info.FwVersion).ToPrometheus();
-            yield return CreateMetric("sensor_rssi_db", info.Rssi).SetTag("radio", "wifi").ToPrometheus();
+            if (info.Rssi.HasValue)
+            {
+                yield return CreateMetric("sensor_rssi_db", info.Rssi.Value).SetTag("radio", "wifi").ToPrometheus();
+            }
         }
     }
 

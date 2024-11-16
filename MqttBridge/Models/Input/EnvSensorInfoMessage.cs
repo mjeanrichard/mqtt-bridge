@@ -6,7 +6,7 @@ public class EnvSensorInfoMessage
     public string Name { get; set; } = string.Empty;
     public string Mac { get; set; } = string.Empty;
     public string Ip { get; set; } = string.Empty;
-    public int Rssi { get; set; }
+    public int? Rssi { get; set; }
     public int FwVersion { get; set; }
     public int SdState { get; set; }
     public int ConnectTime { get; set; }
