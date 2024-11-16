@@ -83,6 +83,11 @@ public class MongoScraper
         await ProcessDataModel<EnvSensorData>(startDate, endDate, "Environment", data => _prometheusProcessor.ProcessAsync(data), 14);
     }
 
+    public async Task ProcessSensorInfo(DateOnly? startDate, DateOnly? endDate)
+    {
+        await ProcessDataModel<EnvSensorInfo>(startDate, endDate, "SensorInfo", data => _prometheusProcessor.ProcessAsync(data), 14);
+    }
+
     public async Task ProcessHeating(DateOnly? startDate, DateOnly? endDate)
     {
         await ProcessDataModel<RemoconModel>(startDate, endDate, "Heating", data => _prometheusProcessor.ProcessAsync(data));
@@ -98,7 +103,6 @@ public class MongoScraper
     {
         await ProcessDataModel<GasMeterData>(startDate, endDate, "GasMeter", data => _prometheusProcessor.ProcessAsync(data));
     }
-
 
     private async Task ProcessDataModel<TEntity>(DateOnly? startDate, DateOnly? endDate, string collectionName, Func<List<TEntity>, Task> publisher, int daysToBatch = 1, Expression<Func<TEntity, bool>>? filter = null) where TEntity : IDataModel
     {

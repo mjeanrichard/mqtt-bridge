@@ -214,11 +214,18 @@ public class PrometheusProcessor
         foreach (EnvSensorInfo info in dataPoints)
         {
             DateTimeOffset dto = info.TimestampUtc;
-            long ts = dto.ToUnixTimeMilliseconds();
-            Dictionary<string, string> tags = new() { { "device", info.Device }, { "ip", info.Ip } };
-            yield return new Metric("sensor_connect_time_seconds") { Timestamp = ts, Value = info.ConnectTime, Tags = tags }.ToPrometheus();
-            yield return new Metric("sensor_firmware_version") { Timestamp = ts, Value = info.FwVersion }.ToPrometheus();
-            yield return new Metric("sensor_rssi_db") { Timestamp = ts, Value = info.Rssi }.ToPrometheus();
+
+            Metric CreateMetric(string name, double value) => new Metric(name)
+                {
+                    Timestamp = dto.ToUnixTimeMilliseconds(),
+                    Value = value
+                }
+                .SetTag("device", info.Device)
+                .SetTag("ip", info.Ip);
+
+            yield return CreateMetric("sensor_connect_time_seconds", info.ConnectTime).ToPrometheus();
+            yield return CreateMetric("sensor_firmware_version", info.FwVersion).ToPrometheus();
+            yield return CreateMetric("sensor_rssi_db", info.Rssi).SetTag("radio", "lora").ToPrometheus();
         }
     }
 

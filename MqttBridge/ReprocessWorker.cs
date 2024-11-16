@@ -32,6 +32,7 @@ public class ReprocessWorker
         }
 
         await ReprocessEnvSensor();
+        await ReprocessEnvInfo();
         await ReprocessPva();
         await ReprocessPvaDaily();
         await ReprocessGasMeter();
@@ -53,6 +54,11 @@ public class ReprocessWorker
     private async Task ReprocessEnvSensor()
     {
         await _mongoScraper.ProcessSensorData(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
+    }
+
+    private async Task ReprocessEnvInfo()
+    {
+        await _mongoScraper.ProcessSensorInfo(_commandLineOptions.StartDate, _commandLineOptions.EndDate);
     }
 
     private async Task ReprocessGasMeter()
