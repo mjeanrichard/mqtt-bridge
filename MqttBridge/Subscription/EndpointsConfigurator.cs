@@ -60,6 +60,7 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                     .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorMeasurement>())
                     .AddMqttInbound<GasMeterMessage>("devices/philoweg/gas/+", "MB_GasMeter" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<GasMeterMessage>())
                     .AddMqttInbound<MqttGatewayMessage>("devices/OMG_LILYGO/LORAtoMQTT/+", "MB_MqttGateway" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<MqttGatewayMessage>())
+                    .AddMqttInbound<HomeAssistantMessage>("homeassistant/statestream/binary_sensor/#", "MB_HA_BinarySensor" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<HomeAssistantMessage>())
             );
     }
 }

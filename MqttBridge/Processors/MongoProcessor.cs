@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using MqttBridge.Models.Data;
 using MqttBridge.Models.Data.GasMeter;
+using MqttBridge.Models.Data.HomeAssistant;
 using MqttBridge.Models.Data.OpenMqttGateway;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Remocon;
@@ -38,6 +39,12 @@ public class MongoProcessor
     {
         FilterDefinition<EnvSensorData> EnvFilter(EnvSensorData dataPoint) => Builders<EnvSensorData>.Filter.Where(x => x.TimestampUtc == dataPoint.TimestampUtc && x.Name == dataPoint.Name && x.Device == dataPoint.Device);
         await UploadAsync(envSensorData, "Environment", EnvFilter);
+    }
+
+    public async Task ProcessAsync(List<HomeAssistantBinarySensorData> homeAssistantData)
+    {
+        FilterDefinition<HomeAssistantBinarySensorData> EnvFilter(HomeAssistantBinarySensorData dataPoint) => Builders<HomeAssistantBinarySensorData>.Filter.Where(x => x.LastReported == dataPoint.LastReported && x.EntityId == dataPoint.EntityId);
+        await UploadAsync(homeAssistantData, "HomeAssistant", EnvFilter);
     }
 
     public async Task ProcessAsync(List<EnvSensorInfo> envSensorInfo)

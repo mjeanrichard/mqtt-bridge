@@ -112,6 +112,7 @@ public class Program
             .AddScopedSubscriber<EnvSensorInfoSubscriber>()
             .AddScopedSubscriber<GasMeterSubscriber>()
             .AddScopedSubscriber<MqttGatewaySubscriber>()
+            .AddScopedSubscriber<HomeAssistantSubscriber>()
             .AddSingletonSubscriber<MongoProcessor>()
             .AddSingletonSubscriber<PrometheusProcessor>();
 
