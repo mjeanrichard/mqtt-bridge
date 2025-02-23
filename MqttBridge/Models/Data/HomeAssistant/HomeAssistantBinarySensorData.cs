@@ -8,7 +8,7 @@ public class HomeAssistantBinarySensorData : HomeAssistantData
     {
     }
 
-    public HomeAssistantBinarySensorData(HomeAssistantMessage message) : base(message)
+    public HomeAssistantBinarySensorData(HomeAssistantMessage message, string topic, string entityName) : base(message, topic, entityName)
     {
         IsOn = string.Equals(message.State, "on", StringComparison.OrdinalIgnoreCase);
     }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MqttBridge.Models.Data.HomeAssistant;
-using MqttBridge.Models.Data.Sensor;
 using MqttBridge.Models.Input;
+using Silverback.Messaging.Messages;
 using Silverback.Messaging.Publishing;
 
 namespace MqttBridge.Subscription;
@@ -18,10 +18,31 @@ public class HomeAssistantSubscriber
         _publisher = publisher;
     }
 
-    public async Task ProcessAsync(HomeAssistantMessage message)
+    public async Task ProcessAsync(IInboundEnvelope<HomeAssistantMessage> envelope)
     {
-        _logger.LogDebug("Received HomeAssistantBinarySensor message.");
-        List<HomeAssistantData> data = [new HomeAssistantBinarySensorData(message)];
+        if (envelope.Message == null)
+        {
+            _logger.LogWarning("Received empty HomeAssistantBinarySensor message.");
+            return;
+        }
+
+        _logger.LogDebug("Received HomeAssistantBinarySensor message for topic '{topic}'.", envelope.ActualEndpointName);
+
+        string[] segments = envelope.ActualEndpointName.Split("/");
+        string sensorType = segments[^3];
+        string sensorName = segments[^2];
+
+        List<HomeAssistantData> data = new(1);
+        switch (sensorType)
+        {
+            case "binary_sensor":
+                data.Add(new HomeAssistantBinarySensorData(envelope.Message, envelope.ActualEndpointName, sensorName));
+                break;
+            default:
+                _logger.LogWarning("Unknown HomeAssistant sensor type '{sensorType}'.", sensorType);
+                return;
+        }
+
         await _publisher.PublishAsync(data);
     }
 }

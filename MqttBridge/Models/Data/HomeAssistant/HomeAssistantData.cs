@@ -4,8 +4,10 @@ namespace MqttBridge.Models.Data.HomeAssistant;
 
 public abstract class HomeAssistantData : IDataModel
 {
-    protected HomeAssistantData(HomeAssistantMessage message)
+    protected HomeAssistantData(HomeAssistantMessage message, string topic, string entityName)
     {
+        Topic = topic;
+        EntityName = entityName;
         EntityId = message.EntityId;
         LastChanged = message.LastChanged;
         LastReported = message.LastReported;
@@ -22,11 +24,17 @@ public abstract class HomeAssistantData : IDataModel
         FriendlyName = string.Empty;
         State = string.Empty;
         DeviceClass = "unknown";
+        Topic = string.Empty;
+        EntityName = string.Empty;
     }
+
+    public string EntityName { get; set; }
 
     public string DeviceClass { get; set; }
 
     public string EntityId { get; set; }
+
+    public string Topic { get; set; }
 
     public DateTime TimestampUtc { get; set; }
 
