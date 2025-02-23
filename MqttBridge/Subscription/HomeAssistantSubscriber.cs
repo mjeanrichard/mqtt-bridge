@@ -21,7 +21,7 @@ public class HomeAssistantSubscriber
     public async Task ProcessAsync(HomeAssistantMessage message)
     {
         _logger.LogDebug("Received HomeAssistantBinarySensor message.");
-        List<HomeAssistantBinarySensorData> data = new() { new HomeAssistantBinarySensorData(message) };
+        List<HomeAssistantData> data = [new HomeAssistantBinarySensorData(message)];
         await _publisher.PublishAsync(data);
     }
 }

@@ -41,9 +41,9 @@ public class MongoProcessor
         await UploadAsync(envSensorData, "Environment", EnvFilter);
     }
 
-    public async Task ProcessAsync(List<HomeAssistantBinarySensorData> homeAssistantData)
+    public async Task ProcessAsync(List<HomeAssistantData> homeAssistantData)
     {
-        FilterDefinition<HomeAssistantBinarySensorData> EnvFilter(HomeAssistantBinarySensorData dataPoint) => Builders<HomeAssistantBinarySensorData>.Filter.Where(x => x.LastReported == dataPoint.LastReported && x.EntityId == dataPoint.EntityId);
+        FilterDefinition<HomeAssistantData> EnvFilter(HomeAssistantData dataPoint) => Builders<HomeAssistantData>.Filter.Where(x => x.LastReported == dataPoint.LastReported && x.EntityId == dataPoint.EntityId);
         await UploadAsync(homeAssistantData, "HomeAssistant", EnvFilter);
     }
 

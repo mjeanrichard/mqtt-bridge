@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MqttBridge.Models;
 using MqttBridge.Models.Data.GasMeter;
+using MqttBridge.Models.Data.HomeAssistant;
 using MqttBridge.Models.Data.OpenMqttGateway;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Data.Remocon;
@@ -67,6 +68,12 @@ public class PrometheusProcessor
     public async Task ProcessAsync(List<PlantSenseWifi> data)
     {
         _logger.LogInformation($"Writing '{nameof(PlantSenseWifi)}' data to Prometheus.");
+        await SendToPrometheus(ConvertToPrometheus(data));
+    }
+
+    public async Task ProcessAsync(List<HomeAssistantData> data)
+    {
+        _logger.LogInformation($"Writing '{nameof(HomeAssistantData)}' data to Prometheus.");
         await SendToPrometheus(ConvertToPrometheus(data));
     }
 
@@ -251,6 +258,17 @@ public class PrometheusProcessor
         }
     }
 
+    private IEnumerable<string> ConvertToPrometheus(IEnumerable<HomeAssistantData> dataPoints)
+    {
+        List<string> records = new();
+        foreach (HomeAssistantData data in dataPoints)
+        {
+            records.AddRange(data.ToPrometheus());
+        }
+
+        return records;
+    }
+
     private IEnumerable<string> ConvertToPrometheus(IEnumerable<PlantSenseData> dataPoints)
     {
         foreach (PlantSenseData data in dataPoints)
@@ -279,7 +297,7 @@ public class PrometheusProcessor
             yield return CreateMetric("sensor_snr_ratio", data.Snr).SetTag("radio", "lora").ToPrometheus();
         }
     }
-    
+
     private IEnumerable<string> ConvertToPrometheus(IEnumerable<PlantSenseWifi> dataPoints)
     {
         foreach (PlantSenseWifi data in dataPoints)

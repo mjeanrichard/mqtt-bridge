@@ -73,9 +73,10 @@ public class Program
 
         IHostEnvironment env = builder.Environment;
         builder.Configuration
-            .AddEnvironmentVariables()
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true, true);
+            .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true, true)
+            .AddEnvironmentVariables();
+
 
         builder.Services.Configure<MqttSettings>(
             builder.Configuration.GetRequiredSection(MqttSettings.Name));
