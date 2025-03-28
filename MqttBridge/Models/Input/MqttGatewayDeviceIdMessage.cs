@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace MqttBridge.Models.Input;
 
-public class MqttGatewayMessage
+public class MqttGatewayDeviceIdMessage
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;

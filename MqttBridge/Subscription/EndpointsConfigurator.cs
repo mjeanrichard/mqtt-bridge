@@ -59,7 +59,8 @@ public class EndpointsConfigurator : IEndpointsConfigurator
                     .AddMqttInbound<EnvSensorInfoMessage>("devices/philoweg/+/info", "MB_EnvSensorInfo" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorInfoMessage>())
                     .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorMeasurement>())
                     .AddMqttInbound<GasMeterMessage>("devices/philoweg/gas/+", "MB_GasMeter" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<GasMeterMessage>())
-                    .AddMqttInbound<MqttGatewayMessage>("devices/OMG_LILYGO/LORAtoMQTT/+", "MB_MqttGateway" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<MqttGatewayMessage>())
+                    .AddMqttInbound<MqttGatewayDeviceIdMessage>("devices/OMG_LILYGO/LORAtoMQTT/+", "MB_MqttGateway" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<MqttGatewayDeviceIdMessage>())
+                    .AddMqttInbound<MqttGatewayGenericMessage>("devices/OMG_LILYGO/LORAtoMQTT", "MB_MqttGateway2" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<MqttGatewayGenericMessage>())
                     .AddMqttInbound<HomeAssistantMessage>("homeassistant/statestream/binary_sensor/#", "MB_HA_BinarySensor" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<HomeAssistantMessage>())
             );
     }

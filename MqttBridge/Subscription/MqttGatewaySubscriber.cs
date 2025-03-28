@@ -1,8 +1,11 @@
 ﻿using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson.Serialization;
 using MqttBridge.Models.Data.OpenMqttGateway;
 using MqttBridge.Models.Input;
+using Silverback.Messaging.Messages;
 using Silverback.Messaging.Publishing;
+using Silverback.Messaging.Serialization;
 
 namespace MqttBridge.Subscription;
 
@@ -12,19 +15,45 @@ public class MqttGatewaySubscriber
 
     private readonly IPublisher _publisher;
 
+
     public MqttGatewaySubscriber(ILogger<MqttGatewaySubscriber> logger, IPublisher publisher)
     {
         _logger = logger;
         _publisher = publisher;
     }
 
-    public async Task ProcessAsync(MqttGatewayMessage message)
+    public async Task ProcessAsync(MqttGatewayDeviceIdMessage message)
     {
         _logger.LogDebug("Received OpenMqttGateway message.");
         await PublishAsync(message);
     }
 
-    private Task PublishAsync(MqttGatewayMessage message)
+    public async Task ProcessAsync(MqttGatewayGenericMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(message.Hex))
+        {
+            return;
+        }
+
+        _logger.LogDebug("Received OpenMqttGateway HEX message.");
+
+        byte[] jsonBytes = Convert.FromHexString(message.Hex);
+
+        MqttGatewayDeviceIdMessage? deviceData = JsonSerializer.Deserialize<MqttGatewayDeviceIdMessage>(jsonBytes);
+        if (deviceData == null) {
+            _logger.LogWarning("Failed to deserialize OpenMqttGateway HEX message.");
+            return;
+        }
+
+        deviceData.Rssi = message.Rssi;
+        deviceData.PacketSize = message.PacketSize;
+        deviceData.PfError = message.PfError;
+        deviceData.Snr = message.Snr;
+
+        await PublishAsync(deviceData);
+    }
+
+    private Task PublishAsync(MqttGatewayDeviceIdMessage message)
     {
         switch (message.Model)
         {
@@ -36,7 +65,7 @@ public class MqttGatewaySubscriber
         }
     }
 
-    private Task PublishPlantSense(MqttGatewayMessage message)
+    private Task PublishPlantSense(MqttGatewayDeviceIdMessage message)
     {
         switch (message.Message)
         {
@@ -49,7 +78,7 @@ public class MqttGatewaySubscriber
         }
     }
 
-    private async Task PublishPlantSenseWifi(MqttGatewayMessage message)
+    private async Task PublishPlantSenseWifi(MqttGatewayDeviceIdMessage message)
     {
         PlantSenseWifi data = new();
         MapOpenMqttGatewayProperties(message, data);
@@ -78,7 +107,7 @@ public class MqttGatewaySubscriber
     }
 
 
-    private async Task PublishPlantSenseData(MqttGatewayMessage message)
+    private async Task PublishPlantSenseData(MqttGatewayDeviceIdMessage message)
     {
         PlantSenseData data = new();
         MapOpenMqttGatewayProperties(message, data);
@@ -131,7 +160,7 @@ public class MqttGatewaySubscriber
         await _publisher.PublishAsync(new List<PlantSenseData>() { data });
     }
 
-    private void MapOpenMqttGatewayProperties<T>(MqttGatewayMessage message, T data) where T : OpenMqttGatewayData, new()
+    private void MapOpenMqttGatewayProperties<T>(MqttGatewayDeviceIdMessage message, T data) where T : OpenMqttGatewayData, new()
     {
         data.Model = message.Model;
         data.DeviceId = message.Id;

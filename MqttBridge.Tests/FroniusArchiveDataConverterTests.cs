@@ -1,11 +1,11 @@
 using System.Text;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Input;
 using MQTTnet.Client;
 using NSubstitute;
+using Shouldly;
 using Silverback.Messaging;
 using Silverback.Messaging.Broker;
 using Silverback.Messaging.Configuration.Mqtt;
@@ -50,7 +50,7 @@ public class FroniusArchiveDataConverterTests
         MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
         (object? Message, Type MessageType) archiveData = await jsonMessageSerializer.DeserializeAsync(stream, new MessageHeaderCollection(), MessageSerializationContext.Empty);
 
-        archiveData.Should().NotBeNull();
+        archiveData.Message.ShouldNotBeNull();
         //archiveData!.Seconds.Should().Be(41700);
     }
 }
