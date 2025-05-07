@@ -8,10 +8,16 @@ namespace MqttBridge.Subscription;
 
 public class FroniusDetailSubscriber
 {
-    private static double? ToWattHours(double? watts)
+    private double? ToWattHours(double? watts)
     {
         if (watts == null)
         {
+            return null;
+        }
+
+        if (watts < 0)
+        {
+            _logger.LogWarning($"Negative Wattage {watts}");
             return null;
         }
 
