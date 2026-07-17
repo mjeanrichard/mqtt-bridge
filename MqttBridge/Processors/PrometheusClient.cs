@@ -27,7 +27,8 @@ public class PrometheusClient
 
     public Task SendMetricsAsync(Func<HttpContent> contentFactory)
     {
-        return SendAsync(() => new HttpRequestMessage(HttpMethod.Post, "api/v1/import/prometheus")
+        // Relative URI, resolved against the configured write base address (_httpClient.BaseAddress).
+        return SendAsync(() => new HttpRequestMessage(HttpMethod.Post, new Uri("api/v1/import/prometheus", UriKind.Relative))
         {
             Content = contentFactory()
         });
@@ -70,9 +71,10 @@ public class PrometheusClient
     public async Task DeleteSeriesData(string seriesFilter)
     {
         _logger.LogInformation($"Deleting prometheus data for filter '{seriesFilter}'.");
-        // Use a relative URI so it resolves against the configured base address (preserving any base path),
-        // consistent with SendMetricsAsync.
-        string relativeUri = $"api/v1/admin/tsdb/delete_series?match[]={Uri.EscapeDataString(seriesFilter)}";
-        await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, new Uri(relativeUri, UriKind.Relative)));
+        // Deletes target vmselect, which is a different service than the write endpoint, so build an absolute URI
+        // from the dedicated delete base URL (falling back to the write URL when not configured).
+        string deleteBase = string.IsNullOrWhiteSpace(_prometheusSettings.DeleteUrl) ? _prometheusSettings.Url : _prometheusSettings.DeleteUrl;
+        Uri uri = new(new Uri(deleteBase), $"api/v1/admin/tsdb/delete_series?match[]={Uri.EscapeDataString(seriesFilter)}");
+        await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, uri));
     }
 }

@@ -115,6 +115,27 @@ public class PrometheusClientTests
         handler.Requests[0].RequestUri!.AbsolutePath.ShouldBe("/victoria/api/v1/import/prometheus");
     }
 
+    [Test]
+    public async Task DeleteSeriesData_UsesDeleteUrl_WhenConfigured()
+    {
+        StubHandler handler = new(_ => new HttpResponseMessage(HttpStatusCode.OK));
+        IOptions<PrometheusSettings> settings = Options.Create(new PrometheusSettings
+        {
+            Url = "http://vminsert:8480/insert/0/prometheus/",
+            DeleteUrl = "http://vmselect:8481/delete/0/prometheus/"
+        });
+        PrometheusClient client = new(NullLogger<PrometheusClient>.Instance, settings, handler);
+
+        await client.DeleteSeriesData("{__name__=~\"pva_.*\"}");
+
+        Uri requestUri = handler.Requests[0].RequestUri!;
+        // Deletes must go to the dedicated vmselect endpoint, not the write (vminsert) host.
+        requestUri.Host.ShouldBe("vmselect");
+        requestUri.Port.ShouldBe(8481);
+        requestUri.AbsolutePath.ShouldBe("/delete/0/prometheus/api/v1/admin/tsdb/delete_series");
+        requestUri.Query.ShouldContain(Uri.EscapeDataString("{__name__=~\"pva_.*\"}"));
+    }
+
     private sealed class StubHandler : HttpMessageHandler
     {
         private readonly Func<int, HttpResponseMessage> _responder;
