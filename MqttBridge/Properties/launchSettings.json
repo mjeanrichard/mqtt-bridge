@@ -1,11 +1,14 @@
 {
   "profiles": {
     "MqttBridge": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "--mqtt",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "development"
+      }
     },
     "Docker": {
       "commandName": "Docker",
-      "commandLineArgs": "",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "development"
       }

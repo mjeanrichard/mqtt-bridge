@@ -26,9 +26,9 @@ public class HomeAssistantSubscriber
             return;
         }
 
-        _logger.LogDebug("Received HomeAssistantBinarySensor message for topic '{topic}'.", envelope.ActualEndpointName);
+        _logger.LogDebug("Received HomeAssistantBinarySensor message for topic '{topic}'.", envelope.Endpoint.RawName);
 
-        string[] segments = envelope.ActualEndpointName.Split("/");
+        string[] segments = envelope.Endpoint.RawName.Split("/");
         string sensorType = segments[^3];
         string sensorName = segments[^2];
 
@@ -36,7 +36,7 @@ public class HomeAssistantSubscriber
         switch (sensorType)
         {
             case "binary_sensor":
-                data.Add(new HomeAssistantBinarySensorData(envelope.Message, envelope.ActualEndpointName, sensorName));
+                data.Add(new HomeAssistantBinarySensorData(envelope.Message, envelope.Endpoint.RawName, sensorName));
                 break;
             default:
                 _logger.LogWarning("Unknown HomeAssistant sensor type '{sensorType}'.", sensorType);

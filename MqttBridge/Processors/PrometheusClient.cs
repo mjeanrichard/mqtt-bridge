@@ -14,31 +14,57 @@ public class PrometheusClient
 
     private readonly HttpClient _httpClient;
 
-    public PrometheusClient(ILogger<PrometheusClient> logger, IOptions<PrometheusSettings> prometheusSettings)
+    public PrometheusClient(ILogger<PrometheusClient> logger, IOptions<PrometheusSettings> prometheusSettings, HttpMessageHandler? handler = null)
     {
         _logger = logger;
         _prometheusSettings = prometheusSettings.Value;
-        _httpClient = new HttpClient();
+        _httpClient = handler is null ? new HttpClient() : new HttpClient(handler);
         _httpClient.BaseAddress = new Uri(_prometheusSettings.Url);
+        _httpClient.Timeout = TimeSpan.FromSeconds(300);
     }
 
-    public async Task SendMetricsAsync(PushStreamContent content)
-    {
-        HttpRequestMessage request = new(HttpMethod.Post, "/api/v1/import/prometheus");
-        request.Content = content;
-        await SendAsync(request);
-    }
+    private const int MaxRetries = 3;
 
-    private async Task SendAsync(HttpRequestMessage request)
+    public Task SendMetricsAsync(Func<HttpContent> contentFactory)
     {
-        if (!string.IsNullOrWhiteSpace(_prometheusSettings.Username))
+        return SendAsync(() => new HttpRequestMessage(HttpMethod.Post, "api/v1/import/prometheus")
         {
-            string encodedCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join(':', _prometheusSettings.Username, _prometheusSettings.Password)));
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", encodedCredentials);
-        }
+            Content = contentFactory()
+        });
+    }
 
-        using HttpResponseMessage responseMessage = await _httpClient.SendAsync(request);
-        responseMessage.EnsureSuccessStatusCode();
+    private async Task SendAsync(Func<HttpRequestMessage> requestFactory)
+    {
+        int retries = 0;
+
+        while (true)
+        {
+            // A HttpRequestMessage (and its content) can only be sent once, so build a fresh one for every attempt.
+            using HttpRequestMessage request = requestFactory();
+
+            if (!string.IsNullOrWhiteSpace(_prometheusSettings.Username))
+            {
+                string encodedCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join(':', _prometheusSettings.Username, _prometheusSettings.Password)));
+                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", encodedCredentials);
+            }
+
+            try
+            {
+                using HttpResponseMessage responseMessage = await _httpClient.SendAsync(request);
+                responseMessage.EnsureSuccessStatusCode();
+                return;
+            }
+            catch (Exception ex)
+            {
+                if (retries >= MaxRetries)
+                {
+                    throw;
+                }
+
+                retries++;
+                _logger.LogWarning(ex, $"Error while pushing to Prometheus '{ex.Message}'. Will retry ({retries}/{MaxRetries}).");
+            }
+        }
     }
 
     public async Task DeleteSeriesData(string seriesFilter)
@@ -47,7 +73,6 @@ public class PrometheusClient
         UriBuilder deleteUri = new(_prometheusSettings.Url);
         deleteUri.Path = "/api/v1/admin/tsdb/delete_series";
         deleteUri.Query = $"match[]={seriesFilter}";
-        HttpRequestMessage request = new(HttpMethod.Post, deleteUri.Uri);
-        await SendAsync(request);
+        await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, deleteUri.Uri));
     }
 }

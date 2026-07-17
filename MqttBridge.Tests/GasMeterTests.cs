@@ -1,8 +1,5 @@
-using System.Text;
 using MqttBridge.Models.Input;
 using Shouldly;
-using Silverback.Messaging.Messages;
-using Silverback.Messaging.Serialization;
 
 namespace MqttBridge.Tests;
 
@@ -43,12 +40,9 @@ public class GasMeterTests
                       }
                       """;
 
-        JsonMessageSerializer<GasMeterMessage> jsonMessageSerializer = new();
-        using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
-        (object? message, Type messageType) = await jsonMessageSerializer.DeserializeAsync(stream, new MessageHeaderCollection(), MessageSerializationContext.Empty);
+        GasMeterMessage message = await TestDeserializer.DeserializeAsync<GasMeterMessage>(json);
 
-        message.ShouldBeOfType<GasMeterMessage>();
-        ((GasMeterMessage)message!).BatteryMillivolts.ShouldBe(2363);
-        ((GasMeterMessage)message).Values[0].ScaledValue.ShouldBe(21072718);
+        message.BatteryMillivolts.ShouldBe(2363);
+        message.Values[0].ScaledValue.ShouldBe(21072718);
     }
 }

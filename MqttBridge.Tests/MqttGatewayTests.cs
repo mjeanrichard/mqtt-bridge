@@ -1,28 +1,16 @@
-using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using MqttBridge.Models.Data.OpenMqttGateway;
 using MqttBridge.Models.Input;
 using MqttBridge.Subscription;
 using NSubstitute;
 using Shouldly;
-using Silverback.Messaging.Messages;
 using Silverback.Messaging.Publishing;
-using Silverback.Messaging.Serialization;
 
 namespace MqttBridge.Tests;
 
 public class MqttGatewayTests
 {
-    private static async Task<T> DeserializeMessage<T>(string json)
-    {
-        JsonMessageSerializer<T> jsonMessageSerializer = new();
-        using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
-        (object? message, Type messageType) = await jsonMessageSerializer.DeserializeAsync(stream, new MessageHeaderCollection(), MessageSerializationContext.Empty);
-
-        message.ShouldBeOfType<T>();
-        T data = (T)message!;
-        return data;
-    }
+    private static Task<T> DeserializeMessage<T>(string json) where T : class => TestDeserializer.DeserializeAsync<T>(json);
 
     [Test]
     public async Task HexMessageDeserialize_ShouldWork()
@@ -74,7 +62,7 @@ public class MqttGatewayTests
         data.Model.ShouldBe("PlantSense");
         data.Battery.ShouldBe(3.84);
         data.DeviceId.ShouldBe("f0f5bdc1958c");
-        data.Name.ShouldBe("Büro");
+        data.Name.ShouldBe("BÃ¼ro");
         data.Snr.ShouldBe(7.75f);
     }
 

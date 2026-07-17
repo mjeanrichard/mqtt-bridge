@@ -8,7 +8,8 @@ public class MqttSettings
     public string Host { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public int? Port { get; set; }
+
+    public int Port { get; set; } = 1883;
     public bool UseTls { get; set; }
 
     public string ClientSuffix { get; set; } = string.Empty;

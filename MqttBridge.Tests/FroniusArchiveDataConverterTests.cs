@@ -1,17 +1,13 @@
-using System.Text;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using System.Reflection;
+using System.Text.Json;
+using Microsoft.Extensions.Logging.Abstractions;
 using MqttBridge.Models.Data.Pva;
 using MqttBridge.Models.Input;
-using MQTTnet.Client;
+using MqttBridge.Subscription;
 using NSubstitute;
 using Shouldly;
-using Silverback.Messaging;
-using Silverback.Messaging.Broker;
-using Silverback.Messaging.Configuration.Mqtt;
 using Silverback.Messaging.Messages;
-using Silverback.Messaging.Serialization;
-using Silverback.Testing;
+using Silverback.Messaging.Publishing;
 
 namespace MqttBridge.Tests;
 
@@ -42,90 +38,21 @@ public class FroniusArchiveDataConverterTests
                       }
                       """;
 
-        JsonMessageSerializer<FroniusArchiveData> jsonMessageSerializer = new()
-        {
-            // Options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-        };
+        FroniusArchiveData archiveData = await TestDeserializer.DeserializeAsync<FroniusArchiveData>(json);
 
-        MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
-        (object? Message, Type MessageType) archiveData = await jsonMessageSerializer.DeserializeAsync(stream, new MessageHeaderCollection(), MessageSerializationContext.Empty);
-
-        archiveData.Message.ShouldNotBeNull();
-        //archiveData!.Seconds.Should().Be(41700);
+        archiveData.ShouldNotBeNull();
+        //archiveData.Seconds.Should().Be(41700);
     }
-}
-
-public class TestApplication : IAsyncDisposable
-{
-    private readonly Task _mainTask;
-
-    private readonly CancellationTokenSource _cancellationTokenSource;
-
-    private readonly HostApplicationBuilder _hostBuilder;
-
-    private readonly IHost _host;
-
-    public TestApplication()
+    
+    [Test]
+    public async Task ConvertAsync_ConvertsJson_WhenDataIsBroken()
     {
-        _cancellationTokenSource = new CancellationTokenSource();
+        using Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MqttBridge.Tests.FroniusData.json");
 
-        _hostBuilder = Program.ConfigureHost(new CommandLineOptions());
-        ConfigureTestServices(_hostBuilder.Services);
+        FroniusDailyMessage froniusDailyMessage = await JsonSerializer.DeserializeAsync<FroniusDailyMessage>(stream);
+        FroniusDetailSubscriber froniusDetailSubscriber = new(Substitute.For<IPublisher>(), NullLogger<FroniusDetailSubscriber>.Instance);
+        IEnumerable<FroniusArchiveData> data = froniusDetailSubscriber.Map(froniusDailyMessage);
 
-        _host = _hostBuilder.Build();
-
-        _mainTask = Task.Run(() => _host.RunAsync(_cancellationTokenSource.Token));
-    }
-
-    public IServiceProvider Services => _host.Services;
-
-    public async Task SendMqttMessage(string message, string topic)
-    {
-        using IServiceScope scope = Services.CreateScope();
-
-        MqttBroker broker = scope.ServiceProvider.GetRequiredService<MqttBroker>();
-        IProducer producer = broker.GetProducer(new MqttProducerEndpoint(topic)
-        {
-            Configuration = new MqttClientConfig()
-            {
-                ClientId = "testClient",
-                ChannelOptions = new MqttClientTcpOptions()
-                {
-                    Server = "mqtt"
-                }
-            }
-        });
-
-        await producer.RawProduceAsync(Encoding.UTF8.GetBytes(message));
-
-        await WaitForMessageConsumptionAsync(scope);
-    }
-
-    private async Task WaitForMessageConsumptionAsync(IServiceScope scope)
-    {
-        IMqttTestingHelper testingHelper = scope.ServiceProvider.GetRequiredService<IMqttTestingHelper>();
-        await testingHelper.WaitUntilAllMessagesAreConsumedAsync(TimeSpan.FromSeconds(5));
-    }
-
-    public async ValueTask Stop()
-    {
-        try
-        {
-            _cancellationTokenSource.Cancel();
-            await _mainTask;
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    private void ConfigureTestServices(IServiceCollection services)
-    {
-        services.UseMockedMqtt();
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return Stop();
+        data.ShouldNotBeNull();
     }
 }

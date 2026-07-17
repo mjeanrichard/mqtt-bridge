@@ -1,27 +1,12 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using MqttBridge.Configuration;
 using MqttBridge.Models.Input;
 using Silverback.Messaging.Configuration;
-using Silverback.Messaging.Serialization;
 
 namespace MqttBridge.Subscription;
 
-public class EndpointsConfigurator : IEndpointsConfigurator
+public class EndpointsConfigurator : IBrokerClientsConfigurator
 {
-    private static JsonMessageSerializer<TMessage> CreateCamelCaseSerializer<TMessage>()
-    {
-        return new JsonMessageSerializer<TMessage>()
-        {
-            Options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-        };
-    }
-
-    private static JsonMessageSerializer<TMessage> CreateDefaultSerializer<TMessage>()
-    {
-        return new JsonMessageSerializer<TMessage>();
-    }
-
     private readonly MqttSettings _mqttSettings;
 
     public EndpointsConfigurator(IOptions<MqttSettings> mqttOptions)
@@ -29,39 +14,33 @@ public class EndpointsConfigurator : IEndpointsConfigurator
         _mqttSettings = mqttOptions.Value;
     }
 
-    public void Configure(IEndpointsConfigurationBuilder builder)
+    public void Configure(BrokerClientsConfigurationBuilder builder)
     {
         builder
-            .AddMqttEndpoints(
-                endpoints => endpoints
+            .AddMqttClients(endpoints =>
+            {
+                endpoints.ConnectViaTcp(_mqttSettings.Host, _mqttSettings.Port);
+                if (_mqttSettings.UseTls)
+                {
+                    endpoints.EnableTls(tls => tls.AllowUntrustedCertificates());
+                }
+                else
+                {
+                    endpoints.DisableTls();
+                }
 
-                    // Configure the client options
-                    .Configure(
-                        config =>
-                        {
-                            config.ConnectViaTcp(_mqttSettings.Host, _mqttSettings.Port);
-                            if (_mqttSettings.UseTls)
-                            {
-                                config.EnableTls(tlsOptionBuilder => tlsOptionBuilder.WithAllowUntrustedCertificates());
-                            }
-                            else
-                            {
-                                config.DisableTls();
-                            }
+                if (!string.IsNullOrWhiteSpace(_mqttSettings.Username))
+                {
+                    endpoints.WithCredentials(_mqttSettings.Username, _mqttSettings.Password);
+                }
 
-                            if (!string.IsNullOrWhiteSpace(_mqttSettings.Username))
-                            {
-                                config.WithCredentials(_mqttSettings.Username, _mqttSettings.Password);
-                            }
-                        }
-                    )
-                    .AddMqttInbound<FroniusDailyMessage>("devices/philoweg/pva/daily", "MB_FroniusArchive" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<FroniusDailyMessage>())
-                    .AddMqttInbound<EnvSensorInfoMessage>("devices/philoweg/+/info", "MB_EnvSensorInfo" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorInfoMessage>())
-                    .AddMqttInbound<EnvSensorMeasurement>("devices/philoweg/+/sensors/+", "MB_EnvSensorMeasurement" + _mqttSettings.ClientSuffix, CreateCamelCaseSerializer<EnvSensorMeasurement>())
-                    .AddMqttInbound<GasMeterMessage>("devices/philoweg/gas/+", "MB_GasMeter" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<GasMeterMessage>())
-                    .AddMqttInbound<MqttGatewayDeviceIdMessage>("devices/OMG_LILYGO/LORAtoMQTT/+", "MB_MqttGateway" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<MqttGatewayDeviceIdMessage>())
-                    .AddMqttInbound<MqttGatewayGenericMessage>("devices/OMG_LILYGO/LORAtoMQTT", "MB_MqttGateway2" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<MqttGatewayGenericMessage>())
-                    .AddMqttInbound<HomeAssistantMessage>("homeassistant/statestream/binary_sensor/#", "MB_HA_BinarySensor" + _mqttSettings.ClientSuffix, CreateDefaultSerializer<HomeAssistantMessage>())
-            );
+                endpoints.AddMqttSubscription<FroniusDailyMessage>("MB_FroniusArchive" + _mqttSettings.ClientSuffix, "devices/philoweg/pva/daily", false);
+                endpoints.AddMqttSubscription<EnvSensorInfoMessage>("MB_EnvSensorInfo" + _mqttSettings.ClientSuffix, "devices/philoweg/+/info", true);
+                endpoints.AddMqttSubscription<EnvSensorMeasurement>("MB_EnvSensorMeasurement" + _mqttSettings.ClientSuffix, "devices/philoweg/+/sensors/+", true);
+                endpoints.AddMqttSubscription<GasMeterMessage>("MB_GasMeter" + _mqttSettings.ClientSuffix, "devices/philoweg/gas/+", false);
+                endpoints.AddMqttSubscription<MqttGatewayDeviceIdMessage>("MB_MqttGateway" + _mqttSettings.ClientSuffix, "devices/OMG_LILYGO/LORAtoMQTT/+", false);
+                endpoints.AddMqttSubscription<MqttGatewayGenericMessage>("MB_MqttGateway2" + _mqttSettings.ClientSuffix, "devices/OMG_LILYGO/LORAtoMQTT", false);
+                endpoints.AddMqttSubscription<HomeAssistantMessage>("MB_HA_BinarySensor" + _mqttSettings.ClientSuffix, "homeassistant/statestream/binary_sensor/#", false);
+            });
     }
 }

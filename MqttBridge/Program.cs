@@ -11,6 +11,8 @@ using MqttBridge.Configuration;
 using MqttBridge.Processors;
 using MqttBridge.Scrapers;
 using MqttBridge.Subscription;
+using Silverback.Configuration;
+using Silverback.Messaging.Configuration;
 
 namespace MqttBridge;
 
@@ -124,7 +126,7 @@ public class Program
         {
             services.AddSilverback()
                 .WithConnectionToMessageBroker(options => options.AddMqtt())
-                .AddEndpointsConfigurator<EndpointsConfigurator>();
+                .AddBrokerClientsConfigurator<EndpointsConfigurator>();
         }
     }
 

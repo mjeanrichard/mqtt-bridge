@@ -79,7 +79,8 @@ public class PrometheusProcessor
 
     private async Task SendToPrometheus(IEnumerable<string> lines)
     {
-        PushStreamContent content = new(async stream =>
+        // Pass a factory rather than a single content instance: each (re)try needs a fresh body stream.
+        await _prometheusClient.SendMetricsAsync(() => new PushStreamContent(async stream =>
         {
             try
             {
@@ -95,9 +96,7 @@ public class PrometheusProcessor
             {
                 _logger.LogError(ex, "Failed to upload data to prometheus");
             }
-        });
-
-        await _prometheusClient.SendMetricsAsync(content);
+        }));
     }
 
     private IEnumerable<string> ConvertToPrometheus(IEnumerable<FroniusArchiveData> dataPoints)
