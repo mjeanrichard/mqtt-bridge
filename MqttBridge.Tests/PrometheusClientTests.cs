@@ -9,9 +9,9 @@ namespace MqttBridge.Tests;
 
 public class PrometheusClientTests
 {
-    private static PrometheusClient CreateClient(HttpMessageHandler handler)
+    private static PrometheusClient CreateClient(HttpMessageHandler handler, string url = "http://localhost/")
     {
-        IOptions<PrometheusSettings> settings = Options.Create(new PrometheusSettings { Url = "http://localhost/" });
+        IOptions<PrometheusSettings> settings = Options.Create(new PrometheusSettings { Url = url });
         return new PrometheusClient(NullLogger<PrometheusClient>.Instance, settings, handler);
     }
 
@@ -86,6 +86,33 @@ public class PrometheusClientTests
         auth.ShouldNotBeNull();
         auth.Scheme.ShouldBe("Basic");
         auth.Parameter.ShouldBe(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("user:pass")));
+    }
+
+    [Test]
+    public async Task DeleteSeriesData_TargetsConfiguredBasePath()
+    {
+        StubHandler handler = new(_ => new HttpResponseMessage(HttpStatusCode.OK));
+        // Configured URL carries a base path that must be preserved.
+        PrometheusClient client = CreateClient(handler, "http://localhost/victoria/");
+
+        await client.DeleteSeriesData("{__name__=~\"pva_.*\"}");
+
+        Uri requestUri = handler.Requests[0].RequestUri!;
+        requestUri.AbsolutePath.ShouldBe("/victoria/api/v1/admin/tsdb/delete_series");
+        requestUri.Query.ShouldContain("match[]=");
+        // The filter must be URL-encoded.
+        requestUri.Query.ShouldContain(Uri.EscapeDataString("{__name__=~\"pva_.*\"}"));
+    }
+
+    [Test]
+    public async Task SendMetricsAsync_TargetsConfiguredBasePath()
+    {
+        StubHandler handler = new(_ => new HttpResponseMessage(HttpStatusCode.OK));
+        PrometheusClient client = CreateClient(handler, "http://localhost/victoria/");
+
+        await client.SendMetricsAsync(ContentFactory("metric 1"));
+
+        handler.Requests[0].RequestUri!.AbsolutePath.ShouldBe("/victoria/api/v1/import/prometheus");
     }
 
     private sealed class StubHandler : HttpMessageHandler

@@ -70,9 +70,9 @@ public class PrometheusClient
     public async Task DeleteSeriesData(string seriesFilter)
     {
         _logger.LogInformation($"Deleting prometheus data for filter '{seriesFilter}'.");
-        UriBuilder deleteUri = new(_prometheusSettings.Url);
-        deleteUri.Path = "/api/v1/admin/tsdb/delete_series";
-        deleteUri.Query = $"match[]={seriesFilter}";
-        await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, deleteUri.Uri));
+        // Use a relative URI so it resolves against the configured base address (preserving any base path),
+        // consistent with SendMetricsAsync.
+        string relativeUri = $"api/v1/admin/tsdb/delete_series?match[]={Uri.EscapeDataString(seriesFilter)}";
+        await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, new Uri(relativeUri, UriKind.Relative)));
     }
 }
